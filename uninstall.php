@@ -14,18 +14,18 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 /**
  * Delete the plugin's options from the current site.
  */
-function uams_plugin_template_remove_site_data(): void
+function uamswp_auditor_role_remove_site_data(): void
 {
-    delete_option('uams_plugin_template_greeting');
-    delete_option('uams_plugin_template_version');
+    delete_option('uamswp_auditor_role_greeting');
+    delete_option('uamswp_auditor_role_version');
 }
 
 if (is_multisite()) {
-    foreach (get_sites(['number' => 0]) as $uams_plugin_template_site) {
-        switch_to_blog((int) $uams_plugin_template_site->blog_id);
-        uams_plugin_template_remove_site_data();
+    foreach (get_sites(['number' => 0]) as $uamswp_auditor_role_site) {
+        switch_to_blog((int) $uamswp_auditor_role_site->blog_id);
+        uamswp_auditor_role_remove_site_data();
         restore_current_blog();
     }
 } else {
-    uams_plugin_template_remove_site_data();
+    uamswp_auditor_role_remove_site_data();
 }

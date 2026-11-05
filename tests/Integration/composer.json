@@ -1,5 +1,5 @@
 {
-    "name": "uams-web/uams-plugin-template-integration-tests",
+    "name": "uams-web/uamswp-auditor-role-integration-tests",
     "description": "The Integration suite's own Composer setup: WordPress' test suite supports PHPUnit 9 only, and the root runs Pest 5 on PHPUnit 13.",
     "license": "GPL-3.0-or-later",
     "require-dev": {

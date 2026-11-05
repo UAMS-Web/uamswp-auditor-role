@@ -23,7 +23,7 @@
     <coverage>
         <include>
             <directory suffix=".php">../../includes</directory>
-            <file>../../uams-plugin-template.php</file>
+            <file>../../uamswp-auditor-role.php</file>
         </include>
     </coverage>
 </phpunit>

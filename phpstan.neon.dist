@@ -16,7 +16,7 @@ parameters:
     paths:
         - includes
         - tests
-        - uams-plugin-template.php
+        - uamswp-auditor-role.php
         - uninstall.php
 
     # The Integration suite's own Composer setup is not this repository's code.
@@ -53,4 +53,4 @@ parameters:
         # downgraded underneath an already-active plugin.
         -
             identifier: if.alwaysFalse
-            path: uams-plugin-template.php
+            path: uamswp-auditor-role.php

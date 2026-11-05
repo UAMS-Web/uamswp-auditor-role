@@ -1,7 +1,7 @@
 <?php
 
 /**
- * UAMSWeb\PluginTemplate\Plugin, with WordPress mocked.
+ * UAMSWeb\AuditorRole\Plugin, with WordPress mocked.
  *
  * @see includes/Plugin.php
  */
@@ -9,15 +9,15 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use UAMSWeb\PluginTemplate\Plugin;
-use UAMSWeb\PluginTemplate\Settings;
+use UAMSWeb\AuditorRole\Plugin;
+use UAMSWeb\AuditorRole\Settings;
 
 use function Brain\Monkey\Actions\expectAdded;
 
 beforeEach(function (): void {
-    if (! defined('UAMS_PLUGIN_TEMPLATE_FILE')) {
-        define('UAMS_PLUGIN_TEMPLATE_FILE', '/plugins/uams-plugin-template/uams-plugin-template.php');
-        define('UAMS_PLUGIN_TEMPLATE_VERSION', '0.1.0');
+    if (! defined('UAMSWP_AUDITOR_ROLE_FILE')) {
+        define('UAMSWP_AUDITOR_ROLE_FILE', '/plugins/uamswp-auditor-role/uamswp-auditor-role.php');
+        define('UAMSWP_AUDITOR_ROLE_VERSION', '0.1.0');
     }
 });
 
@@ -31,23 +31,23 @@ it('registers its hooks on boot', function (): void {
 });
 
 it('loads the translations from the languages folder', function (): void {
-    Functions\when('plugin_basename')->justReturn('uams-plugin-template/uams-plugin-template.php');
+    Functions\when('plugin_basename')->justReturn('uamswp-auditor-role/uamswp-auditor-role.php');
     Functions\expect('load_plugin_textdomain')
         ->once()
-        ->with('uams-plugin-template', false, 'uams-plugin-template/languages');
+        ->with('uamswp-auditor-role', false, 'uamswp-auditor-role/languages');
 
     Plugin::load_textdomain();
 });
 
 it('records the version on activation and deletes nothing', function (): void {
-    Functions\expect('add_option')->once()->with('uams_plugin_template_version', '0.1.0', '', false);
+    Functions\expect('add_option')->once()->with('uamswp_auditor_role_version', '0.1.0', '', false);
     Functions\expect('delete_option')->never();
 
     Plugin::activate();
 });
 
 it('deletes nothing on deactivation', function (): void {
-    Functions\expect('wp_clear_scheduled_hook')->once()->with('uams_plugin_template_cron');
+    Functions\expect('wp_clear_scheduled_hook')->once()->with('uamswp_auditor_role_cron');
     Functions\expect('delete_option')->never();
 
     Plugin::deactivate();

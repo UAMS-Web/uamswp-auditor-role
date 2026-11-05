@@ -7,7 +7,7 @@
 <ruleset name="UAMS-Web WordPress security sniffs">
     <description>WordPressCS security sniffs only; formatting belongs to Pint.</description>
 
-    <file>uams-plugin-template.php</file>
+    <file>uamswp-auditor-role.php</file>
     <file>uninstall.php</file>
     <file>includes</file>
     <exclude-pattern>vendor/*</exclude-pattern>
@@ -24,16 +24,16 @@
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="uams-plugin-template"/>
+                <element value="uamswp-auditor-role"/>
             </property>
         </properties>
     </rule>
     <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
         <properties>
             <property name="prefixes" type="array">
-                <element value="UAMSWeb\PluginTemplate"/>
-                <element value="uams_plugin_template"/>
-                <element value="UAMS_PLUGIN_TEMPLATE"/>
+                <element value="UAMSWeb\AuditorRole"/>
+                <element value="uamswp_auditor_role"/>
+                <element value="UAMSWP_AUDITOR_ROLE"/>
             </property>
         </properties>
     </rule>

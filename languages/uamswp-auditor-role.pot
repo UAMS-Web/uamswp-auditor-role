@@ -1,18 +1,18 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: UAMS Plugin Template 0.1.0\n"
-"Report-Msgid-Bugs-To: https://github.com/UAMS-Web/wordpress-plugin-template/issues\n"
+"Project-Id-Version: UAMS Auditor Role 0.1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/UAMS-Web/uamswp-auditor-role/issues\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Domain: uams-plugin-template\n"
+"X-Domain: uamswp-auditor-role\n"
 
-#: uams-plugin-template.php
-msgid "UAMS Plugin Template requires PHP 8.2 or newer and has not loaded."
+#: uamswp-auditor-role.php
+msgid "UAMS Auditor Role requires PHP 8.2 or newer and has not loaded."
 msgstr ""
 
 #: includes/Settings.php
-msgid "UAMS Plugin Template"
+msgid "UAMS Auditor Role"
 msgstr ""
 
 #: includes/Settings.php
