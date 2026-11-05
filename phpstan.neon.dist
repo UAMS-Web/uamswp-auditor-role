@@ -23,9 +23,16 @@ parameters:
     excludePaths:
         analyse:
             - tests/Integration/vendor
+        analyseAndScan:
+            # Stand-ins for the Unit suite; the analyzer reads WordPress' own stubs.
+            - tests/Support/wordpress-classes.php
 
     # WordPress' test classes ship with wp-phpunit, not with WordPress.
     # Needs `composer setup:integration` to have run.
+    # WP-CLI's classes and functions, for the commands under includes/Cli.
+    scanFiles:
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+
     scanDirectories:
         - tests/Integration/vendor/wp-phpunit/wp-phpunit/includes
         - tests/Integration/vendor/yoast/phpunit-polyfills/src

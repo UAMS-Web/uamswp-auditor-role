@@ -3,7 +3,7 @@
 /**
  * Plugin Name:       UAMS Auditor Role
  * Plugin URI:        https://github.com/UAMS-Web/uamswp-auditor-role
- * Description:       Adds a read-only Auditor role for reviewing a WordPress install without Administrator rights. Deploy as a must-use plugin.
+ * Description:       Adds a read-only Auditor role for reviewing a WordPress install without Administrator rights. Deploy as a must-use plugin with the loader stub.
  * Version:           0.1.0
  * Requires at least: 6.8
  * Requires PHP:      8.2
@@ -39,15 +39,25 @@ defined('ABSPATH') || exit;
 /*
  * The floor guard. `Requires PHP` in the header stops an install on an older
  * PHP, but not a site that is downgraded underneath an active plugin, where the
- * alternative to this notice is a fatal error.
+ * alternative to this notice is a fatal error. It fails closed: an Auditor
+ * account holds no capability while the guard is not loaded.
  */
 if (version_compare(PHP_VERSION, '8.2', '<')) {
+    add_filter('user_has_cap', static function ($allcaps, $caps, $args, $user) {
+        return $user instanceof WP_User && in_array('auditor', (array) $user->roles, true) ? [] : $allcaps;
+    }, PHP_INT_MAX, 4);
+
     add_action('admin_notices', static function (): void {
         echo '<div class="notice notice-error"><p>'
-            .esc_html__('UAMS Auditor Role requires PHP 8.2 or newer and has not loaded.', 'uamswp-auditor-role')
+            .esc_html__('UAMS Auditor Role requires PHP 8.2 or newer and has not loaded. Auditor accounts hold no capabilities until it loads.', 'uamswp-auditor-role')
             .'</p></div>';
     });
 
+    return;
+}
+
+// Loaded once, whether through the must-use stub or the Plugins screen.
+if (defined('UAMSWP_AUDITOR_ROLE_VERSION')) {
     return;
 }
 
@@ -56,7 +66,8 @@ define('UAMSWP_AUDITOR_ROLE_FILE', __FILE__);
 
 require_once __DIR__.'/includes/autoload.php';
 
-register_activation_hook(__FILE__, [Plugin::class, 'activate']);
+// A must-use plugin has no activation hook; the role and the log table are
+// created on `init` instead. This only runs when installed as a regular plugin.
 register_deactivation_hook(__FILE__, [Plugin::class, 'deactivate']);
 
 Plugin::boot();

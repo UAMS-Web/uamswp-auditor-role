@@ -37,5 +37,6 @@ if (! defined('ABSPATH')) {
  * Composer-autoloaded classes need no line here.
  */
 require_once __DIR__.'/../includes/autoload.php';
+require_once __DIR__.'/Support/wordpress-classes.php';
 
 // cspell:ignore ABSPATH autoloaded

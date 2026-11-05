@@ -24,7 +24,9 @@ jobs:
         run: node scripts/check-download-archive.mjs
       - name: Build the ZIP from the tag
         run: node scripts/build-zip.mjs "$GITHUB_REF_NAME" --version "${GITHUB_REF_NAME#v}"
-      - name: Attach the ZIP to the release
+      - name: Write the checksum list
+        run: node scripts/checksums.mjs "$GITHUB_REF_NAME" --version "${GITHUB_REF_NAME#v}"
+      - name: Attach the ZIP and the checksum list to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" build/*.zip --clobber
+        run: gh release upload "$GITHUB_REF_NAME" build/*.zip build/*.sha256 --clobber

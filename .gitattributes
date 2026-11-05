@@ -17,5 +17,7 @@
 /LICENSE -export-ignore
 /includes -export-ignore
 /includes/** -export-ignore
+/loader -export-ignore
+/loader/** -export-ignore
 /languages -export-ignore
 /languages/** -export-ignore
