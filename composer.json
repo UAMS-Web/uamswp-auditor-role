@@ -1,0 +1,65 @@
+{
+    "name": "uams-web/uams-plugin-template",
+    "description": "The starting point for a UAMS-Web WordPress plugin.",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "brain/monkey": "^2.7",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "laravel/pint": "^1.0",
+        "pestphp/pest": "^5.3",
+        "php-stubs/wordpress-stubs": "~6.8.0",
+        "phpstan/phpstan": "^2.0",
+        "rector/rector": "^2.0",
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "wp-coding-standards/wpcs": "^3.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "UAMSWeb\\PluginTemplate\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.4.27"
+        },
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "setup:integration": "@composer install --working-dir=tests/Integration",
+        "lint:floor": "@php scripts/lint-floor.php",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "test": [
+            "@test:unit",
+            "@test:integration"
+        ],
+        "test:unit": "pest",
+        "test:integration": "@php tests/Integration/vendor/bin/phpunit --configuration tests/Integration/phpunit.xml",
+        "test:phpcs": "phpcs",
+        "test:pint": "pint --test",
+        "test:refactor": "rector process --dry-run --no-progress-bar",
+        "fix:pint": "pint",
+        "build": "node scripts/build-zip.mjs",
+        "check:archive": "node scripts/check-download-archive.mjs"
+    },
+    "scripts-descriptions": {
+        "setup:integration": "Install the Integration suite's own Composer setup (PHPUnit 9.6, wp-phpunit, the polyfills).",
+        "lint:floor": "Parse every shipped PHP file with the PHP named in LINT_PHP (default: php), the supported floor.",
+        "stan": "Run PHPStan.",
+        "test": "Run both suites, each in its own process, so the Unit suite never sees WordPress.",
+        "test:unit": "Run the Pest suite that needs no WordPress and no database.",
+        "test:integration": "Run the PHPUnit 9.6 suite that boots WordPress through wp-phpunit against the test database.",
+        "test:phpcs": "Run the WordPress security sniffs.",
+        "test:pint": "Check formatting without changing files.",
+        "test:refactor": "Show what Rector would change; fails when it would change anything.",
+        "build": "Build the upload ZIP from the download keep-list into build/.",
+        "check:archive": "Check that a branch download holds only what the plugin runs."
+    }
+}

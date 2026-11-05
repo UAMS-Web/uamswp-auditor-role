@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      composer:
+        patterns: ['*']
+    ignore:
+      # The stubs are pinned to ~6.8.0, the plugin's WordPress floor, so PHPStan
+      # rejects any function the oldest supported site lacks (docs/DECISIONS.md,
+      # "WordPress floor"). Lift this ignore, with that pin, when the floor moves.
+      - dependency-name: php-stubs/wordpress-stubs
+        versions: ['>=6.9.0']
+
+  - package-ecosystem: composer
+    directory: /tests/Integration
+    schedule:
+      interval: weekly
+    groups:
+      composer-integration:
+        patterns: ['*']
+    ignore:
+      # wp-phpunit tracks WordPress core, and tests/Integration/composer.json pins
+      # it to ~7.0.0 to match WordPress 7.0.8, the version the UAMS sites run
+      # (docs/DECISIONS.md, "WordPress pin"; the CI job's WP_VERSION must move with
+      # it). Lift this ignore, with that pin, when the sites move to 7.1.
+      - dependency-name: wp-phpunit/wp-phpunit
+        versions: ['>=7.1.0']
+
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']

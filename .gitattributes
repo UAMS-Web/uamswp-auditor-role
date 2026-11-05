@@ -1,0 +1,21 @@
+# Pin working-tree and committed text to LF. A committed `eol=lf` outranks the
+# machine's `core.autocrlf`, which Git for Windows defaults to `true`.
+* text=auto eol=lf
+*.zip binary
+*.png binary
+
+# The download keep-list. A branch download (what WP Pusher installs) and the
+# release ZIP are `git archive`, so they hold only what the plugin runs.
+# Deny everything, then name the runtime paths back in. Adding a runtime folder
+# means adding a `-export-ignore` line for it; `composer check:archive` fails a
+# change that ships anything else.
+/* export-ignore
+/.* export-ignore
+/uams-plugin-template.php -export-ignore
+/uninstall.php -export-ignore
+/readme.txt -export-ignore
+/LICENSE -export-ignore
+/includes -export-ignore
+/includes/** -export-ignore
+/languages -export-ignore
+/languages/** -export-ignore

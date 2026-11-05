@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!--
+  WordPressCS security sniffs only: output escaping, nonce verification, input
+  validation and sanitization, safe redirects, prepared SQL. Formatting is
+  Pint's, so no formatting sniff is enabled and phpcbf is never run.
+-->
+<ruleset name="UAMS-Web WordPress security sniffs">
+    <description>WordPressCS security sniffs only; formatting belongs to Pint.</description>
+
+    <file>uams-plugin-template.php</file>
+    <file>uninstall.php</file>
+    <file>includes</file>
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>node_modules/*</exclude-pattern>
+    <exclude-pattern>tests/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg value="sp"/>
+
+    <rule ref="WordPress.Security"/>
+    <rule ref="WordPress.DB.PreparedSQL"/>
+    <rule ref="WordPress.DB.PreparedSQLPlaceholders"/>
+    <rule ref="WordPress.WP.Capabilities"/>
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="uams-plugin-template"/>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="UAMSWeb\PluginTemplate"/>
+                <element value="uams_plugin_template"/>
+                <element value="UAMS_PLUGIN_TEMPLATE"/>
+            </property>
+        </properties>
+    </rule>
+
+    <config name="minimum_supported_wp_version" value="6.9"/>
+</ruleset>

@@ -1,0 +1,10 @@
+/vendor/
+/tests/Integration/vendor/
+/node_modules/
+/build/
+/.phpstan/
+/.phpunit.cache/
+/.phpunit.result.cache
+/tests/Integration/.phpunit.result.cache
+/.rector-cache/
+/.pint.cache

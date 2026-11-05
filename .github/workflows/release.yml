@@ -1,0 +1,30 @@
+name: Release
+
+# Publishing a GitHub release builds the upload ZIP from the download keep-list and
+# attaches it to the release. Nothing is committed: no dist/ directory exists.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  attach-zip:
+    name: Attach the upload ZIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check the download archive
+        run: node scripts/check-download-archive.mjs
+      - name: Build the ZIP from the tag
+        run: node scripts/build-zip.mjs "$GITHUB_REF_NAME" --version "${GITHUB_REF_NAME#v}"
+      - name: Attach the ZIP to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" build/*.zip --clobber

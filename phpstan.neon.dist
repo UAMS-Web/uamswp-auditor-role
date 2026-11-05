@@ -1,0 +1,56 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+    - vendor/pestphp/pest/extension.neon
+
+parameters:
+    # The PHP versions the code must parse and run on: the supported floor
+    # (composer.json's php constraint, the header's Requires PHP) up to the
+    # development PHP.
+    phpVersion:
+        min: 80200
+        max: 80400
+
+    level: 8
+
+    paths:
+        - includes
+        - tests
+        - uams-plugin-template.php
+        - uninstall.php
+
+    # The Integration suite's own Composer setup is not this repository's code.
+    excludePaths:
+        analyse:
+            - tests/Integration/vendor
+
+    # WordPress' test classes ship with wp-phpunit, not with WordPress.
+    # Needs `composer setup:integration` to have run.
+    scanDirectories:
+        - tests/Integration/vendor/wp-phpunit/wp-phpunit/includes
+        - tests/Integration/vendor/yoast/phpunit-polyfills/src
+
+    # A checkout-scoped cache; add /.phpstan/ to .gitignore.
+    tmpDir: .phpstan
+
+    ignoreErrors:
+        # `$this` inside a closure passed to `uses()->beforeEach()` / `afterEach()`
+        # is bound by Pest at runtime, which PHPStan cannot see.
+        -
+            identifier: variable.undefined
+            message: '#^Undefined variable: \$this$#'
+            path: tests/Pest.php
+            reportUnmatched: false
+        # Pest routes its public API through classes it tags @internal; calling
+        # them from a test is Pest's intended use.
+        -
+            identifier: method.internalClass
+            message: '#of internal class Pest\\#'
+            path: tests
+            reportUnmatched: false
+        # The PHP floor guard in the main file: PHPStan analyzes at the floor, so
+        # the guard is always false to the analyzer, but it exists for a site
+        # downgraded underneath an already-active plugin.
+        -
+            identifier: if.alwaysFalse
+            path: uams-plugin-template.php
