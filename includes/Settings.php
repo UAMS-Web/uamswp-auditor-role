@@ -12,26 +12,26 @@
 
 declare(strict_types=1);
 
-namespace UAMSWeb\PluginTemplate;
+namespace UAMSWeb\AuditorRole;
 
 defined('ABSPATH') || exit;
 
 final class Settings
 {
     /** The admin-post action and the nonce action. */
-    public const ACTION = 'uams_plugin_template_save';
+    public const ACTION = 'uamswp_auditor_role_save';
 
     /** The nonce field name. */
-    public const NONCE = 'uams_plugin_template_nonce';
+    public const NONCE = 'uamswp_auditor_role_nonce';
 
     /** The capability that may change the setting. */
     public const CAPABILITY = 'manage_options';
 
     /** The option that holds the greeting. */
-    public const OPTION = 'uams_plugin_template_greeting';
+    public const OPTION = 'uamswp_auditor_role_greeting';
 
     /** The menu and page slug. */
-    public const PAGE = 'uams-plugin-template';
+    public const PAGE = 'uamswp-auditor-role';
 
     /**
      * Add the page under Settings.
@@ -39,8 +39,8 @@ final class Settings
     public static function register_page(): void
     {
         add_options_page(
-            __('UAMS Plugin Template', 'uams-plugin-template'),
-            __('UAMS Plugin Template', 'uams-plugin-template'),
+            __('UAMS Auditor Role', 'uamswp-auditor-role'),
+            __('UAMS Auditor Role', 'uamswp-auditor-role'),
             self::CAPABILITY,
             self::PAGE,
             [self::class, 'render_page']
@@ -52,7 +52,7 @@ final class Settings
      */
     public static function register_setting(): void
     {
-        register_setting('uams_plugin_template', self::OPTION, [
+        register_setting('uamswp_auditor_role', self::OPTION, [
             'type' => 'string',
             'sanitize_callback' => [self::class, 'sanitize'],
             'default' => '',
@@ -73,7 +73,7 @@ final class Settings
     public static function render_page(): void
     {
         if (! current_user_can(self::CAPABILITY)) {
-            wp_die(esc_html__('You do not have permission to view this page.', 'uams-plugin-template'), 403);
+            wp_die(esc_html__('You do not have permission to view this page.', 'uamswp-auditor-role'), 403);
         }
 
         $greeting = get_option(self::OPTION, '');
@@ -85,8 +85,8 @@ final class Settings
                 <input type="hidden" name="action" value="<?php echo esc_attr(self::ACTION); ?>">
                 <?php wp_nonce_field(self::ACTION, self::NONCE); ?>
                 <p>
-                    <label for="uams-plugin-template-greeting"><?php esc_html_e('Greeting', 'uams-plugin-template'); ?></label>
-                    <input type="text" id="uams-plugin-template-greeting" name="greeting" class="regular-text" value="<?php echo esc_attr($greeting); ?>">
+                    <label for="uamswp-auditor-role-greeting"><?php esc_html_e('Greeting', 'uamswp-auditor-role'); ?></label>
+                    <input type="text" id="uamswp-auditor-role-greeting" name="greeting" class="regular-text" value="<?php echo esc_attr($greeting); ?>">
                 </p>
                 <?php submit_button(); ?>
             </form>
@@ -100,7 +100,7 @@ final class Settings
     public static function handle_save(): void
     {
         if (! current_user_can(self::CAPABILITY)) {
-            wp_die(esc_html__('You do not have permission to do that.', 'uams-plugin-template'), 403);
+            wp_die(esc_html__('You do not have permission to do that.', 'uamswp-auditor-role'), 403);
         }
 
         check_admin_referer(self::ACTION, self::NONCE);

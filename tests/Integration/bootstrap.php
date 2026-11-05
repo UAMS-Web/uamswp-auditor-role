@@ -55,7 +55,7 @@ if (! is_readable($wordpress.'wp-settings.php')) {
  * WordPress' test installer DROPS EVERY TABLE it finds and rebuilds the schema.
  * Pointed at the development site's database it destroys it, with no prompt.
  */
-$testDatabase = (string) (getenv('WP_TESTS_DB_NAME') ?: 'uams_plugin_template_tests');
+$testDatabase = (string) (getenv('WP_TESTS_DB_NAME') ?: 'uamswp_auditor_role_tests');
 $liveConfig = $wordpress.'wp-config.php';
 
 if (is_readable($liveConfig)) {
@@ -94,7 +94,7 @@ require_once $wpPhpunit.'/includes/functions.php';
  * depends on another plugin requires that one first, in the same closure.
  */
 tests_add_filter('muplugins_loaded', static function (): void {
-    require dirname(__DIR__, 2).'/uams-plugin-template.php';
+    require dirname(__DIR__, 2).'/uamswp-auditor-role.php';
 });
 
 require $wpPhpunit.'/includes/bootstrap.php';

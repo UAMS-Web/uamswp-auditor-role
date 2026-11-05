@@ -1,7 +1,7 @@
 <?php
 
 /**
- * UAMSWeb\PluginTemplate\Settings, with WordPress mocked.
+ * UAMSWeb\AuditorRole\Settings, with WordPress mocked.
  *
  * @see includes/Settings.php
  */
@@ -9,7 +9,7 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
-use UAMSWeb\PluginTemplate\Settings;
+use UAMSWeb\AuditorRole\Settings;
 
 use function Brain\Monkey\Functions\stubEscapeFunctions;
 use function Brain\Monkey\Functions\stubTranslationFunctions;
@@ -112,7 +112,7 @@ it('saves the sanitized value and redirects safely', function (): void {
 it('registers the page under Settings with the capability', function (): void {
     Functions\expect('add_options_page')
         ->once()
-        ->with('UAMS Plugin Template', 'UAMS Plugin Template', Settings::CAPABILITY, Settings::PAGE, [Settings::class, 'render_page']);
+        ->with('UAMS Auditor Role', 'UAMS Auditor Role', Settings::CAPABILITY, Settings::PAGE, [Settings::class, 'render_page']);
 
     Settings::register_page();
 });
@@ -120,7 +120,7 @@ it('registers the page under Settings with the capability', function (): void {
 it('registers the option with its sanitize callback', function (): void {
     Functions\expect('register_setting')
         ->once()
-        ->with('uams_plugin_template', Settings::OPTION, Mockery::on(
+        ->with('uamswp_auditor_role', Settings::OPTION, Mockery::on(
             static fn (array $args): bool => $args['sanitize_callback'] === [Settings::class, 'sanitize']
         ));
 

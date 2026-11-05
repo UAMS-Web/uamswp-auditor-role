@@ -1,6 +1,6 @@
 {
-    "name": "uams-web/uams-plugin-template",
-    "description": "The starting point for a UAMS-Web WordPress plugin.",
+    "name": "uams-web/uamswp-auditor-role",
+    "description": "A must-use plugin that adds a read-only Auditor role.",
     "type": "wordpress-plugin",
     "license": "GPL-3.0-or-later",
     "require": {
@@ -19,7 +19,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "UAMSWeb\\PluginTemplate\\Tests\\": "tests/"
+            "UAMSWeb\\AuditorRole\\Tests\\": "tests/"
         }
     },
     "config": {

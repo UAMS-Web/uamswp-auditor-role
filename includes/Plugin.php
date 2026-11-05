@@ -6,7 +6,7 @@
 
 declare(strict_types=1);
 
-namespace UAMSWeb\PluginTemplate;
+namespace UAMSWeb\AuditorRole;
 
 defined('ABSPATH') || exit;
 
@@ -32,9 +32,9 @@ final class Plugin
     public static function load_textdomain(): void
     {
         load_plugin_textdomain(
-            'uams-plugin-template',
+            'uamswp-auditor-role',
             false,
-            dirname(plugin_basename(UAMS_PLUGIN_TEMPLATE_FILE)).'/languages'
+            dirname(plugin_basename(UAMSWP_AUDITOR_ROLE_FILE)).'/languages'
         );
     }
 
@@ -47,7 +47,7 @@ final class Plugin
      */
     public static function activate(): void
     {
-        add_option('uams_plugin_template_version', UAMS_PLUGIN_TEMPLATE_VERSION, '', false);
+        add_option('uamswp_auditor_role_version', UAMSWP_AUDITOR_ROLE_VERSION, '', false);
     }
 
     /**
@@ -55,6 +55,6 @@ final class Plugin
      */
     public static function deactivate(): void
     {
-        wp_clear_scheduled_hook('uams_plugin_template_cron');
+        wp_clear_scheduled_hook('uamswp_auditor_role_cron');
     }
 }

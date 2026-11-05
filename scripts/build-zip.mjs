@@ -16,7 +16,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const slug = 'uams-plugin-template';
+const slug = 'uamswp-auditor-role';
 
 const args = process.argv.slice(2);
 const versionFlag = args.indexOf('--version');

@@ -1,6 +1,6 @@
-=== UAMS Plugin Template ===
+=== UAMS Auditor Role ===
 Contributors: uams
-Tags: template
+Tags: audit, roles, read-only
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.2
@@ -8,11 +8,11 @@ Stable tag: 0.1.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The starting point for a UAMS-Web WordPress plugin.
+Adds a read-only Auditor role so a person can review a WordPress install without Administrator rights.
 
 == Description ==
 
-A template that a new UAMS-Web WordPress plugin is created from. Replace this description with the plugin's own.
+A must-use plugin that registers a read-only `Auditor` role. A default-deny guard blocks every write the role could make, and an activity log records what each auditor opened.
 
 == Installation ==
 

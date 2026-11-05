@@ -9,7 +9,7 @@
  * named beside it.
  *
  * The database named here is DROPPED AND REBUILT on every run. It must exist
- * (`mysql -u root -e 'CREATE DATABASE uams_plugin_template_tests'`) and must never be
+ * (`mysql -u root -e 'CREATE DATABASE uamswp_auditor_role_tests'`) and must never be
  * a database anything else uses; tests/Integration/bootstrap.php refuses to run
  * when it matches the surrounding install's.
  *
@@ -21,7 +21,7 @@ declare(strict_types=1);
 // Resolved and exported by tests/Integration/bootstrap.php.
 define('ABSPATH', rtrim((string) (getenv('WP_TESTS_ABSPATH') ?: dirname(__DIR__, 5)), '/').'/');
 
-define('DB_NAME', getenv('WP_TESTS_DB_NAME') ?: 'uams_plugin_template_tests');
+define('DB_NAME', getenv('WP_TESTS_DB_NAME') ?: 'uamswp_auditor_role_tests');
 define('DB_USER', getenv('WP_TESTS_DB_USER') ?: 'root');
 define('DB_PASSWORD', getenv('WP_TESTS_DB_PASSWORD') ?: '');
 define('DB_HOST', getenv('WP_TESTS_DB_HOST') ?: '127.0.0.1');
@@ -32,7 +32,7 @@ $table_prefix = 'wptests_';
 
 define('WP_TESTS_DOMAIN', 'example.org');
 define('WP_TESTS_EMAIL', 'admin@example.org');
-define('WP_TESTS_TITLE', 'UAMS Plugin Template Tests');
+define('WP_TESTS_TITLE', 'UAMS Auditor Role Tests');
 define('WP_PHP_BINARY', 'php');
 
 /*

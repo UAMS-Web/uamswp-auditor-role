@@ -12,14 +12,14 @@ return RectorConfig::configure()
         __DIR__.'/includes',
         __DIR__.'/tests',
         __DIR__.'/scripts',
-        __DIR__.'/uams-plugin-template.php',
+        __DIR__.'/uamswp-auditor-role.php',
         __DIR__.'/uninstall.php',
     ])
     ->withSkip([
         __DIR__.'/tests/Integration/vendor',
         // The floor guard in the main file is deliberate: it protects a site
         // downgraded underneath an active plugin.
-        UnwrapFutureCompatibleIfPhpVersionRector::class => [__DIR__.'/uams-plugin-template.php'],
+        UnwrapFutureCompatibleIfPhpVersionRector::class => [__DIR__.'/uamswp-auditor-role.php'],
         // WordPress hooks take `[Class::class, 'method']` callables: remove_action()
         // finds a hook by the callable it was added with, and a first-class
         // callable is a new Closure on every call, so it could never be removed.

@@ -177,7 +177,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_DATABASE: uams_plugin_template_tests
+          MYSQL_DATABASE: uamswp_auditor_role_tests
         ports:
           - 3306:3306
         options: >-

@@ -11,11 +11,11 @@
 
 declare(strict_types=1);
 
-namespace UAMSWeb\PluginTemplate\Tests\Integration;
+namespace UAMSWeb\AuditorRole\Tests\Integration;
 
-use UAMSWeb\PluginTemplate\Plugin;
-use UAMSWeb\PluginTemplate\Settings;
-use UAMSWeb\PluginTemplate\Tests\Support\IntegrationTestCase;
+use UAMSWeb\AuditorRole\Plugin;
+use UAMSWeb\AuditorRole\Settings;
+use UAMSWeb\AuditorRole\Tests\Support\IntegrationTestCase;
 use WPDieException;
 
 final class SettingsTest extends IntegrationTestCase
@@ -79,12 +79,12 @@ final class SettingsTest extends IntegrationTestCase
 
     public function test_activation_records_the_version_and_uninstall_is_the_only_remover(): void
     {
-        delete_option('uams_plugin_template_version');
+        delete_option('uamswp_auditor_role_version');
 
         Plugin::activate();
         Plugin::deactivate();
 
-        $this->assertSame(UAMS_PLUGIN_TEMPLATE_VERSION, get_option('uams_plugin_template_version'));
+        $this->assertSame(UAMSWP_AUDITOR_ROLE_VERSION, get_option('uamswp_auditor_role_version'));
     }
 
     public function test_uninstall_removes_the_options_from_every_site(): void
@@ -100,17 +100,17 @@ final class SettingsTest extends IntegrationTestCase
         foreach ($siteIds as $siteId) {
             $this->onSite($siteId, static function (): void {
                 update_option(Settings::OPTION, 'kept until uninstall');
-                update_option('uams_plugin_template_version', '0.1.0');
+                update_option('uamswp_auditor_role_version', '0.1.0');
             });
         }
 
-        define('WP_UNINSTALL_PLUGIN', 'uams-plugin-template/uams-plugin-template.php');
+        define('WP_UNINSTALL_PLUGIN', 'uamswp-auditor-role/uamswp-auditor-role.php');
         require dirname(__DIR__, 2).'/uninstall.php';
 
         foreach ($siteIds as $siteId) {
             $this->onSite($siteId, function (): void {
                 $this->assertFalse(get_option(Settings::OPTION));
-                $this->assertFalse(get_option('uams_plugin_template_version'));
+                $this->assertFalse(get_option('uamswp_auditor_role_version'));
             });
         }
     }

@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Plugin Name:       UAMS Plugin Template
- * Plugin URI:        https://github.com/UAMS-Web/wordpress-plugin-template
- * Description:       The starting point for a UAMS-Web WordPress plugin. Replace this description with the plugin's own.
+ * Plugin Name:       UAMS Auditor Role
+ * Plugin URI:        https://github.com/UAMS-Web/uamswp-auditor-role
+ * Description:       Adds a read-only Auditor role for reviewing a WordPress install without Administrator rights. Deploy as a must-use plugin.
  * Version:           0.1.0
  * Requires at least: 6.8
  * Requires PHP:      8.2
@@ -11,11 +11,11 @@
  * Author URI:        https://uams.edu/
  * License:           GPL-3.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-3.0.html
- * Text Domain:       uams-plugin-template
+ * Text Domain:       uamswp-auditor-role
  * Domain Path:       /languages
  * Update URI:        false
  *
- * UAMS Plugin Template
+ * UAMS Auditor Role
  * Copyright (C) 2026 University of Arkansas for Medical Sciences
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -32,7 +32,7 @@
  */
 
 declare(strict_types=1);
-use UAMSWeb\PluginTemplate\Plugin;
+use UAMSWeb\AuditorRole\Plugin;
 
 defined('ABSPATH') || exit;
 
@@ -44,15 +44,15 @@ defined('ABSPATH') || exit;
 if (version_compare(PHP_VERSION, '8.2', '<')) {
     add_action('admin_notices', static function (): void {
         echo '<div class="notice notice-error"><p>'
-            .esc_html__('UAMS Plugin Template requires PHP 8.2 or newer and has not loaded.', 'uams-plugin-template')
+            .esc_html__('UAMS Auditor Role requires PHP 8.2 or newer and has not loaded.', 'uamswp-auditor-role')
             .'</p></div>';
     });
 
     return;
 }
 
-define('UAMS_PLUGIN_TEMPLATE_VERSION', '0.1.0');
-define('UAMS_PLUGIN_TEMPLATE_FILE', __FILE__);
+define('UAMSWP_AUDITOR_ROLE_VERSION', '0.1.0');
+define('UAMSWP_AUDITOR_ROLE_FILE', __FILE__);
 
 require_once __DIR__.'/includes/autoload.php';
 
