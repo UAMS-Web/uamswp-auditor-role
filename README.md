@@ -63,6 +63,7 @@ Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php
 | `docs/DECISIONS.md` | The decision log. |
 | `docs/DEPLOY.md` | Copy, verify by checksum, first run, removal. |
 | `docs/WRITES-ON-LOAD.md` | Screens that write on load, and the decision for each. |
+| `docs/OPERATIONS.md` | Offboarding an auditor, and the periodic review of the activity log. |
 
 ## Develop
 
