@@ -12,6 +12,8 @@ declare(strict_types=1);
 use function Brain\Monkey\setUp;
 use function Brain\Monkey\tearDown;
 
+require_once __DIR__.'/Unit/Helpers.php';
+
 /*
  * Brain Monkey around every test.
  *

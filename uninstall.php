@@ -2,7 +2,10 @@
 
 /**
  * Runs when the plugin is deleted from the Plugins screen: the one place the
- * plugin removes its data. Activation and deactivation never do.
+ * plugin removes its data. Deactivation never does.
+ *
+ * A must-use plugin is never deleted this way; removing it is the procedure in
+ * docs/DEPLOY.md, which ends with `wp role delete auditor` on each site.
  */
 
 declare(strict_types=1);
@@ -12,12 +15,20 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 /**
- * Delete the plugin's options from the current site.
+ * Delete the plugin's role, options, scheduled job and log table from the current site.
  */
 function uamswp_auditor_role_remove_site_data(): void
 {
-    delete_option('uamswp_auditor_role_greeting');
-    delete_option('uamswp_auditor_role_version');
+    global $wpdb;
+
+    remove_role('auditor');
+    wp_clear_scheduled_hook('uamswp_auditor_role_prune');
+
+    foreach (['uamswp_auditor_role_role_version', 'uamswp_auditor_role_log_schema', 'uamswp_auditor_role_retention_days', 'uamswp_auditor_role_last_prune', 'uamswp_auditor_role_version'] as $option) {
+        delete_option($option);
+    }
+
+    $wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', $wpdb->prefix.'uamswp_auditor_log')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
 }
 
 if (is_multisite()) {
@@ -29,3 +40,5 @@ if (is_multisite()) {
 } else {
     uamswp_auditor_role_remove_site_data();
 }
+
+delete_metadata('user', 0, 'uamswp_auditor_role_end_date', '', true);

@@ -45,3 +45,23 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Rejected.** Using an existing activity-log plugin (not on every install). A hard expiry by default (the audit has no fixed end). Showing every settings screen (viewing a secret is the exposure).
 
 **Companion.** The plugin's issues on this repository's tracker.
+
+## 2026-11-05 Choices made while building the guard (#3)
+
+**Decision.**
+
+- **Two more granted capabilities.** `upload_files` (the Media library) and `manage_categories` (the term screens) join the granted list. Their writes are refused like every other.
+- **The guard reads the auth cookies on `plugins_loaded`**, before WordPress sets the current user, and checks again on `init`, so a POST is refused before any regular plugin's `init` or `admin_init` handler runs and any other way in is still covered.
+- **Every non-read request is refused site-wide**, not only in the admin and the REST API, because the database guard would refuse a front-end form's write anyway and a clear refusal beats a silent failure.
+- **Refused statements fail quietly.** The `query` filter returns an empty statement, so wpdb returns false and the page renders. The refusal is logged with its table and, for options, the option name. Transients are refused like any other write; see `docs/WRITES-ON-LOAD.md`.
+- **The plugin's own writes go through `DatabaseGuard::bypass()`**, and the session token through a subclass of core's session manager, not through a table or meta-key allowlist in the filter, which a third-party write to the same table could ride.
+- **Fail closed.** The loader stub and the PHP floor guard strip every capability from an Auditor account when the plugin is not loaded, because the role persists in the database with `manage_options`.
+- **Plugins screen on multisite follows core.** Where the network has not enabled the Plugins menu for site administrators, the role cannot open it either; `wp auditor discover` and `wp auditor network-export` carry the plugin list.
+- **Dashboard widgets that write or summarize a hidden screen are removed** for the role (Quick Draft, WP Mail SMTP reports), through a filterable list.
+- **`wp-login.php` sign-in, password reset and a User Switching switch-back are not an Auditor session**, so a reset by email works and an administrator testing the role can switch back.
+
+**Why.** Each one either closes a gap the issue text left open or follows from testing the role against the uamshealth.com plugin set on a local multisite.
+
+**Rejected.** Allowing transients by default (the issue asks for refusal and a per-case decision). Granting the Plugins screen past the network setting (wider than a site administrator). An allowlist of usermeta keys for the session token (a window another write could pass through).
+
+**Companion.** `docs/WRITES-ON-LOAD.md`, `docs/DEPLOY.md`, and the pull request for #3.

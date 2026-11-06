@@ -9,45 +9,48 @@
 declare(strict_types=1);
 
 use Brain\Monkey\Functions;
+use UAMSWeb\AuditorRole\DatabaseGuard;
+use UAMSWeb\AuditorRole\MetaCaps;
 use UAMSWeb\AuditorRole\Plugin;
-use UAMSWeb\AuditorRole\Settings;
-
-use function Brain\Monkey\Actions\expectAdded;
+use UAMSWeb\AuditorRole\RequestGuard;
+use UAMSWeb\AuditorRole\Retention;
+use UAMSWeb\AuditorRole\Role;
 
 beforeEach(function (): void {
     if (! defined('UAMSWP_AUDITOR_ROLE_FILE')) {
-        define('UAMSWP_AUDITOR_ROLE_FILE', '/plugins/uamswp-auditor-role/uamswp-auditor-role.php');
+        define('UAMSWP_AUDITOR_ROLE_FILE', '/wp-content/mu-plugins/uamswp-auditor-role/uamswp-auditor-role.php');
         define('UAMSWP_AUDITOR_ROLE_VERSION', '0.1.0');
     }
+
+    Functions\when('is_multisite')->justReturn(false);
 });
 
-it('registers its hooks on boot', function (): void {
-    expectAdded('init')->once()->with([Plugin::class, 'load_textdomain']);
-    expectAdded('admin_menu')->once()->with([Settings::class, 'register_page']);
-    expectAdded('admin_init')->once()->with([Settings::class, 'register_setting']);
-    expectAdded('admin_post_'.Settings::ACTION)->once()->with([Settings::class, 'handle_save']);
-
+it('arms both guard layers and registers the role on boot', function (): void {
     Plugin::boot();
+
+    expect(has_filter('query', [DatabaseGuard::class, 'filter']))->toBe(PHP_INT_MAX)
+        ->and(has_action('plugins_loaded', [RequestGuard::class, 'check']))->toBe(PHP_INT_MIN)
+        ->and(has_action('init', [RequestGuard::class, 'check']))->toBe(PHP_INT_MIN)
+        ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
+        ->and(has_filter('map_meta_cap', [MetaCaps::class, 'map']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('rest_pre_dispatch', [RequestGuard::class, 'rest_pre_dispatch']))->toBe(PHP_INT_MIN);
 });
 
-it('loads the translations from the languages folder', function (): void {
+it('loads translations from the must-use folder there', function (): void {
+    if (! defined('WPMU_PLUGIN_DIR')) {
+        define('WPMU_PLUGIN_DIR', '/wp-content/mu-plugins');
+    }
+
     Functions\when('plugin_basename')->justReturn('uamswp-auditor-role/uamswp-auditor-role.php');
-    Functions\expect('load_plugin_textdomain')
-        ->once()
-        ->with('uamswp-auditor-role', false, 'uamswp-auditor-role/languages');
+    Functions\when('wp_normalize_path')->returnArg();
+    Functions\expect('load_muplugin_textdomain')->once()->with('uamswp-auditor-role', 'uamswp-auditor-role/languages');
+    Functions\expect('load_plugin_textdomain')->never();
 
     Plugin::load_textdomain();
 });
 
-it('records the version on activation and deletes nothing', function (): void {
-    Functions\expect('add_option')->once()->with('uamswp_auditor_role_version', '0.1.0', '', false);
-    Functions\expect('delete_option')->never();
-
-    Plugin::activate();
-});
-
-it('deletes nothing on deactivation', function (): void {
-    Functions\expect('wp_clear_scheduled_hook')->once()->with('uamswp_auditor_role_cron');
+it('clears the prune job on deactivation and deletes nothing', function (): void {
+    Functions\expect('wp_clear_scheduled_hook')->once()->with(Retention::HOOK);
     Functions\expect('delete_option')->never();
 
     Plugin::deactivate();

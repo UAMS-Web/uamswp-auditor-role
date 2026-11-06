@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
+use Rector\DeadCode\Rector\Cast\RecastingRemovalRector;
 use Rector\DeadCode\Rector\If_\UnwrapFutureCompatibleIfPhpVersionRector;
+use Rector\Php74\Rector\Closure\ClosureToArrowFunctionRector;
 use Rector\Php81\Rector\Array_\ArrayToFirstClassCallableRector;
 use Rector\ValueObject\PhpVersion;
 
@@ -20,6 +22,10 @@ return RectorConfig::configure()
         // The floor guard in the main file is deliberate: it protects a site
         // downgraded underneath an active plugin.
         UnwrapFutureCompatibleIfPhpVersionRector::class => [__DIR__.'/uamswp-auditor-role.php'],
+        // The same guard runs on the PHP it refuses, so it keeps syntax older
+        // than an arrow function (PHP 7.4) and the cast an older WP_User needs.
+        ClosureToArrowFunctionRector::class => [__DIR__.'/uamswp-auditor-role.php'],
+        RecastingRemovalRector::class => [__DIR__.'/uamswp-auditor-role.php'],
         // WordPress hooks take `[Class::class, 'method']` callables: remove_action()
         // finds a hook by the callable it was added with, and a first-class
         // callable is a new Closure on every call, so it could never be removed.

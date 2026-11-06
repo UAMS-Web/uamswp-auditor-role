@@ -8,53 +8,63 @@ declare(strict_types=1);
 
 namespace UAMSWeb\AuditorRole;
 
+use UAMSWeb\AuditorRole\Cli\AuditorCommand;
+use UAMSWeb\AuditorRole\Cli\LogCommand;
+
 defined('ABSPATH') || exit;
 
 final class Plugin
 {
     /**
      * Register every hook the plugin uses.
+     *
+     * The guard layers boot first: the database guard is armed before any
+     * other plugin hook runs, and the request guard runs on `plugins_loaded`.
      */
     public static function boot(): void
     {
+        DatabaseGuard::boot();
+        RequestGuard::boot();
+        MetaCaps::boot();
+        Screens::boot();
+        Account::boot();
+        Log::boot();
+        Retention::boot();
+        LogViewer::boot();
+        Network::boot();
+        AdminBar::boot();
+
+        add_action('init', [Role::class, 'maybe_register'], 0);
         add_action('init', [self::class, 'load_textdomain']);
-        add_action('admin_menu', [Settings::class, 'register_page']);
-        add_action('admin_init', [Settings::class, 'register_setting']);
-        add_action('admin_post_'.Settings::ACTION, [Settings::class, 'handle_save']);
+
+        if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
+            \WP_CLI::add_command('auditor', AuditorCommand::class);
+            \WP_CLI::add_command('auditor log', LogCommand::class);
+        }
     }
 
     /**
-     * Load the plugin's translations.
-     *
-     * WordPress loads them on demand for plugins on WordPress.org; a plugin
-     * that is not hosted there loads them itself.
+     * Load the plugin's translations, from the must-use folder when it runs there.
      */
     public static function load_textdomain(): void
     {
-        load_plugin_textdomain(
-            'uamswp-auditor-role',
-            false,
-            dirname(plugin_basename(UAMSWP_AUDITOR_ROLE_FILE)).'/languages'
-        );
+        $path = dirname(plugin_basename(UAMSWP_AUDITOR_ROLE_FILE)).'/languages';
+
+        if (defined('WPMU_PLUGIN_DIR') && str_starts_with(wp_normalize_path(UAMSWP_AUDITOR_ROLE_FILE), wp_normalize_path(WPMU_PLUGIN_DIR))) {
+            load_muplugin_textdomain('uamswp-auditor-role', $path);
+
+            return;
+        }
+
+        load_plugin_textdomain('uamswp-auditor-role', false, $path);
     }
 
     /**
-     * Run on activation. Never deletes data.
-     *
-     * The first activation records the version so a later release can tell
-     * which migrations to run. Network activation runs this once for the
-     * network; per-site setup belongs in a `wp_initialize_site` callback.
-     */
-    public static function activate(): void
-    {
-        add_option('uamswp_auditor_role_version', UAMSWP_AUDITOR_ROLE_VERSION, '', false);
-    }
-
-    /**
-     * Run on deactivation. Never deletes data: removal belongs to uninstall.php alone.
+     * Run on deactivation when installed as a regular plugin. Never deletes data:
+     * removal belongs to uninstall.php alone.
      */
     public static function deactivate(): void
     {
-        wp_clear_scheduled_hook('uamswp_auditor_role_cron');
+        wp_clear_scheduled_hook(Retention::HOOK);
     }
 }

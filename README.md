@@ -4,21 +4,64 @@ A must-use WordPress plugin that registers a read-only `Auditor` role, so a pers
 
 Viewing is not the same as changing. The role holds enough capabilities to open settings screens, so a default-deny guard refuses every write the role could make, and an activity log records what each auditor opened. The design decisions are in [`docs/DECISIONS.md`](docs/DECISIONS.md); the work is tracked in this repository's issues.
 
-Status: the repository was created from the shared WordPress plugin template and the role is not built yet.
+Status: built and verified on a local multisite. Not yet rolled out (#23). Deploy with [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+## How it works
+
+The role holds `manage_options` so settings screens open, which means capabilities alone cannot keep it read-only. Four guard layers do, each default-deny:
+
+| Layer | Where | What it refuses |
+| --- | --- | --- |
+| Requests | `RequestGuard` | Every non-read request (POST, PUT, PATCH, DELETE), anywhere on the site, including the REST API after a `_method` override; `admin-post.php`; `options.php`; XML-RPC sign-in; admin GETs carrying an acting `action` or a nonce outside a list table's filter form; screens that write on load (`post-new.php`, `update.php`); the network admin. |
+| AJAX | `RequestGuard` | Every `admin-ajax.php` action not on a short list verified read-only in core. |
+| Capabilities | `MetaCaps` | Every never-granted capability and every acting meta capability (`activate_plugin`, `delete_post`, `create_app_password`, ...), mapped to `do_not_allow`. |
+| Database | `DatabaseGuard` | Every statement that is not a read, through the `query` filter, during an Auditor session. The plugin's own writes (its log, the session token, adding a configured login) pass through `DatabaseGuard::bypass()`. |
+
+Screens whose viewing is the exposure (raw options, exports, form entries, mail and deploy settings, license keys, the Site Health info tab) are hidden from the menu and refused by URL (`Screens`).
+
+The compensating controls: an activity log per site (`Log`), an administrator-only viewer under **Tools > Auditor log** with filters, CSV export and a retention setting (`LogViewer`, `Retention`), an optional end date per account (`Account`), and a **Read-only audit mode** badge in the admin bar (`AdminBar`).
+
+### Filters
+
+| Filter | Changes |
+| --- | --- |
+| `uamswp_auditor_role_capabilities` | The capabilities the role holds. A never-granted one is dropped. |
+| `uamswp_auditor_role_denied_caps` | Adds capabilities denied to the role. |
+| `uamswp_auditor_role_hidden_screens` | The hidden screens: `page:<slug>` or `<script>.php[?param=value]`. |
+| `uamswp_auditor_role_hidden_dashboard_widgets` | Dashboard widgets removed for the role. |
+| `uamswp_auditor_role_ajax_actions` | The allowlisted AJAX actions. Add one only after reading what it does. |
+| `uamswp_auditor_role_get_actions` | The `action` values an admin GET may carry. |
+| `uamswp_auditor_role_allow_query` | Lets one refused statement through; see [`docs/WRITES-ON-LOAD.md`](docs/WRITES-ON-LOAD.md). |
+| `uamswp_auditor_role_exempt_login_actions` | The `wp-login.php` actions that are not an Auditor session. |
+
+### WP-CLI
+
+| Command | Does |
+| --- | --- |
+| `wp auditor discover` | The facts an install needs before deploying: type, versions, sites, plugins, themes, administrator capabilities not in core, secret-looking option names (names only). |
+| `wp auditor network-export [--file=]` | Network settings, plugins, themes and sites as JSON, every secret-bearing value masked. |
+| `wp auditor sync-sites` | Adds each login in `UAMSWP_AUDITOR_ROLE_LOGINS` to every site. |
+| `wp auditor refresh-role [--network]` | Rewrites the role. |
+| `wp auditor log list` / `export` / `prune` | Reads, exports as CSV, or prunes the log, with `--user`, `--from`, `--to`, `--event`. |
+
+Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php <wordpress-path>` reports from files alone.
 
 ## What is in it
 
 | Path | Purpose |
 | --- | --- |
-| `uamswp-auditor-role.php` | The main file: full plugin header, direct-access guard, PHP floor guard, GPL notice. |
+| `uamswp-auditor-role.php` | The main file: full plugin header, direct-access guard, PHP floor guard (fails closed), GPL notice. |
+| `loader/` | The must-use loader stub, copied to the top level of `mu-plugins/`. Fails closed when the plugin folder is missing. |
 | `includes/` | Namespaced code (`UAMSWeb\AuditorRole`) and a small autoloader, so a deployed branch needs no `vendor/`. |
 | `uninstall.php` | The one place data is removed. Multisite-aware. |
 | `readme.txt` | WordPress.org-format readme. |
 | `languages/` | The `.pot` file. |
 | `tests/Unit/` | Pest 5 and Brain Monkey: no WordPress, no database. |
 | `tests/Integration/` | PHPUnit 9.6 on `wp-phpunit`, with its own `composer.json`. |
-| `scripts/` | `build-zip.mjs` (upload ZIP), `check-download-archive.mjs` (keep-list check), `lint-floor.php` (floor lint). |
+| `scripts/` | `build-zip.mjs` (upload ZIP), `checksums.mjs` (the release checksum list), `check-download-archive.mjs` (keep-list check), `lint-floor.php` (floor lint), `discover-files.php` (the file-only discovery fallback). |
 | `docs/DECISIONS.md` | The decision log. |
+| `docs/DEPLOY.md` | Copy, verify by checksum, first run, removal. |
+| `docs/WRITES-ON-LOAD.md` | Screens that write on load, and the decision for each. |
 
 ## Develop
 
@@ -53,7 +96,7 @@ To make a plugin **private**: make the repository private, delete `.github/workf
 
 1. Raise `Version` in the header, `UAMS_PLUGIN_TEMPLATE_VERSION` in the main file, and `Stable tag` and the changelog in `readme.txt`.
 2. Merge to `main`, then publish a GitHub release whose tag is the version (`v1.2.3`).
-3. `release.yml` builds `uamswp-auditor-role-1.2.3.zip` from the tag with the download keep-list and attaches it to the release. Build one locally with `composer build` (it lands in `build/`, which is ignored).
+3. `release.yml` builds `uamswp-auditor-role-1.2.3.zip` from the tag with the download keep-list, writes `uamswp-auditor-role-1.2.3.sha256` (`node scripts/checksums.mjs`), and attaches both to the release. Build one locally with `composer build` (it lands in `build/`, which is ignored).
 
 Sites deploy a branch through WP Pusher, so nothing is built at deploy time and no `dist/` directory is committed. Runtime libraries a plugin needs are committed.
 
