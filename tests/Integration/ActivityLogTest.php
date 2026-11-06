@@ -289,6 +289,55 @@ final class ActivityLogTest extends IntegrationTestCase
         $this->assertSame(2, substr_count($csv, "\n"));
     }
 
+    public function test_the_command_filters_a_two_auditor_log_by_auditor(): void
+    {
+        $other = $this->id(self::factory()->user->create(['role' => Role::NAME, 'user_login' => 'other'.wp_rand()]));
+        $this->insert_row(2, 'view', $this->auditor);
+        $this->insert_row(1, 'view', $other);
+        $user = get_userdata($this->auditor);
+
+        if (! $user instanceof \WP_User) {
+            self::fail('The factory did not create the auditor.');
+        }
+
+        $login = $user->user_login;
+
+        foreach ([['auditor' => $login], ['auditor' => (string) $this->auditor]] as $assoc) {
+            uamswp_auditor_role_g3_cli_reset();
+            (new LogCommand)->list([], $assoc + ['format' => 'json']);
+            $this->assertSame([(string) $this->auditor], array_column(uamswp_auditor_role_g3_formatted_calls()[0][1], 'user_id'));
+        }
+
+        $file = get_temp_dir().'uamswp-auditor-role-g3-'.wp_rand().'.csv';
+        (new LogCommand)->export([], ['file' => $file, 'auditor' => $login]);
+        $lines = [];
+
+        foreach ((array) file($file, FILE_IGNORE_NEW_LINES) as $line) {
+            $lines[] = str_getcsv((string) $line, ',', '"', '');
+        }
+
+        unlink($file);
+
+        $this->assertSame(LogQuery::columns(), $lines[0]);
+        $this->assertSame([(string) $this->auditor], array_column(array_slice($lines, 1), array_flip(LogQuery::columns())['user_id']));
+
+        if (! is_multisite()) {
+            return;
+        }
+
+        $blog_id = $this->id(self::factory()->blog->create());
+        switch_to_blog($blog_id);
+        $this->insert_row(1, 'view', $this->auditor);
+        $this->insert_row(1, 'view', $other);
+        restore_current_blog();
+
+        uamswp_auditor_role_g3_cli_reset();
+        (new LogCommand)->list([], ['format' => 'json', 'all-sites' => '1', 'auditor' => $login]);
+        $rows = uamswp_auditor_role_g3_formatted_calls()[0][1];
+        $this->assertSame([(string) $this->auditor], array_values(array_unique(array_column($rows, 'user_id'))));
+        $this->assertCount(2, $rows);
+    }
+
     public function test_the_command_reads_one_site_or_every_site_of_a_network(): void
     {
         if (! is_multisite()) {

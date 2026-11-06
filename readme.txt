@@ -4,7 +4,7 @@ Tags: audit, roles, read-only
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -21,6 +21,9 @@ A must-use plugin that registers a read-only `Auditor` role. A default-deny guar
 3. Check the files against the release's `.sha256` list. See `docs/DEPLOY.md` in the repository.
 
 == Changelog ==
+
+= 0.2.1 =
+* Fixed: `wp auditor log list` and `export` filter by auditor with `--auditor=<login or ID>`. The option was named `--user`, which WP-CLI reads as its own global option, so it never reached the command and every auditor's rows were returned.
 
 = 0.2.0 =
 * Fixed: saving an Auditor's end date from the profile screen failed its nonce check, because the nonce and the date shared a field name.

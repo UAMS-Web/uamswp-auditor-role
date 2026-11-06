@@ -96,7 +96,7 @@ it('filters by auditor login, dates and event, and limits the rows', function ()
     Functions\expect('get_user_by')->once()->with('login', 'audit')->andReturn(uamswp_auditor_role_user_with(7, 'audit', ['auditor']));
     uamswp_auditor_role_g3_db()->results = [[uamswp_auditor_role_g3_row(3), uamswp_auditor_role_g3_row(2), uamswp_auditor_role_g3_row(1)]];
 
-    uamswp_auditor_role_g3_run(new LogCommand, 'list', ['user' => 'audit', 'from' => '2026-11-01', 'to' => '2026-11-05', 'event' => 'refused', 'limit' => '2']);
+    uamswp_auditor_role_g3_run(new LogCommand, 'list', ['auditor' => 'audit', 'from' => '2026-11-01', 'to' => '2026-11-05', 'event' => 'refused', 'limit' => '2']);
 
     expect(uamswp_auditor_role_g3_db()->prepared[0])->toBe("SELECT * FROM `wp_uamswp_auditor_log` WHERE 1=1 AND user_id = 7 AND logged_at >= '2026-11-01 00:00:00' AND logged_at <= '2026-11-05 23:59:59' AND event = 'refused' ORDER BY id DESC LIMIT 2 OFFSET 0")
         ->and(array_column(uamswp_auditor_role_g3_formatted()[1], 'id'))->toBe(['3', '2']);
@@ -107,7 +107,7 @@ it('filters by auditor ID', function (): void {
     Functions\expect('get_user_by')->never();
     uamswp_auditor_role_g3_db()->results = [[]];
 
-    uamswp_auditor_role_g3_run(new LogCommand, 'list', ['user' => '12']);
+    uamswp_auditor_role_g3_run(new LogCommand, 'list', ['auditor' => '12']);
 
     expect(uamswp_auditor_role_g3_db()->prepared[0])->toContain('AND user_id = 12 ');
 });
@@ -127,8 +127,8 @@ it('refuses a filter it cannot read, before reading the log', function (array $a
     expect(uamswp_auditor_role_g3_run(new LogCommand, 'list', $assoc))->toBe($error)
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe([]);
 })->with([
-    'unknown login' => [['user' => 'nobody'], 'No such user: nobody'],
-    'unknown ID' => [['user' => '999'], 'No such user: 999'],
+    'unknown login' => [['auditor' => 'nobody'], 'No such auditor: nobody'],
+    'unknown ID' => [['auditor' => '999'], 'No such auditor: 999'],
     'bad from date' => [['from' => '2026-02-30'], '--from must be a date in Y-m-d form.'],
     'bad to date' => [['to' => 'yesterday'], '--to must be a date in Y-m-d form.'],
     'unknown event' => [['event' => 'deleted'], '--event must be one of: view, refused, db_refused, login, logout, login_refused'],
@@ -271,3 +271,12 @@ it('has only the two subcommands that read', function (): void {
 
     expect($methods)->toBe(['list', 'export']);
 });
+
+it('declares --auditor in its synopsis, never --user, which WP-CLI keeps for itself', function (string $method): void {
+    // WP-CLI reads a command's options from its docblock, and --user is one of
+    // its global parameters: an option declared as --user never reaches the command.
+    $doc = (string) (new ReflectionMethod(LogCommand::class, $method))->getDocComment();
+
+    expect($doc)->toContain('[--auditor=<auditor>]');
+    expect($doc)->not->toContain('[--user=');
+})->with(['list', 'export']);
