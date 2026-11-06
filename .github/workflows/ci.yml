@@ -345,7 +345,10 @@ jobs:
           PHP
           wp core multisite-install --url=http://localhost --title=Walk --admin_user=admin --admin_password="$WALK_ADMIN_PASSWORD" --admin_email=admin@example.test --skip-email
           wp site create --slug=two --title=Two --quiet
-          grep -v '^#' "$GITHUB_WORKSPACE/tests/Walk/plugins.txt" | xargs wp plugin install --activate-network --quiet
+          # One at a time, so a plugin that will not install is named.
+          for plugin in $(grep -v '^#' "$GITHUB_WORKSPACE/tests/Walk/plugins.txt"); do
+            wp plugin install "$plugin" --activate-network || { echo "::error::Could not install $plugin"; exit 1; }
+          done
           mkdir -p wp-content/mu-plugins
           git -C "$GITHUB_WORKSPACE" archive --worktree-attributes --format=tar --prefix=uamswp-auditor-role/ HEAD | tar -x -C wp-content/mu-plugins
           cp wp-content/mu-plugins/uamswp-auditor-role/loader/uamswp-auditor-role-loader.php wp-content/mu-plugins/
