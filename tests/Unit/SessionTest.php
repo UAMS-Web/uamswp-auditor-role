@@ -102,21 +102,22 @@ it('answers no while the cookie is read and while its user is looked up, and yes
     $GLOBALS['pagenow'] = 'admin.php';
     uamswp_auditor_role_g2_actions(false);
     $during = [];
-    $depth = 0;
+    // An object, so the count changed inside the closure is read back as such.
+    $depth = new ArrayObject(['now' => 0]);
 
     // A re-entry fails at once, so a mutant that drops the guard is killed by
     // this assertion instead of recursing until the mutation run times out.
-    $ask = static function () use (&$during, &$depth): void {
-        if ($depth > 0) {
+    $ask = static function () use (&$during, $depth): void {
+        if ($depth['now'] > 0) {
             throw new RuntimeException('is_auditor() re-entered the cookie read');
         }
 
-        $depth++;
+        $depth['now']++;
 
         try {
             $during[] = Session::is_auditor();
         } finally {
-            $depth--;
+            $depth['now']--;
         }
     };
 
