@@ -1,0 +1,11 @@
+# The public plugin set CI's screen walk installs and network-activates, one
+# wordpress.org slug per line. A deployment walks its own set by installing it
+# and running tests/Walk/walk.php against that install (docs/WALK.md).
+classic-editor
+contact-form-7
+redirection
+regenerate-thumbnails
+tablepress
+user-switching
+wp-crontrol
+wp-mail-smtp

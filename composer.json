@@ -20,7 +20,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "UAMSWeb\\AuditorRole\\Tests\\": "tests/"
+            "UAMSWeb\\AuditorRole\\Tests\\": "tests/",
+            "UAMSWeb\\AuditorRole\\Walk\\": "tests/Walk/src/"
         }
     },
     "config": {
@@ -43,7 +44,7 @@
         ],
         "test:unit": "pest",
         "test:coverage": "pest --coverage",
-        "mutate": "pest --mutate --everything --parallel --min=100 --path=includes",
+        "mutate": "pest --mutate --everything --parallel --min=100 --path=includes,tests/Walk/src",
         "test:integration": "@php tests/Integration/vendor/bin/phpunit --configuration tests/Integration/phpunit.xml",
         "test:phpcs": "phpcs",
         "test:pint": "pint --test",
@@ -59,7 +60,7 @@
         "test": "Run both suites, each in its own process, so the Unit suite never sees WordPress.",
         "test:unit": "Run the Pest suite that needs no WordPress and no database.",
         "test:coverage": "Run the Pest suite with line coverage of includes/ (needs PCOV or Xdebug).",
-        "mutate": "Mutation-test includes/ with Pest (needs PCOV) and fail on any mutant not killed. Pass --path=<file> to scope it to one class.",
+        "mutate": "Mutation-test includes/ and the screen walk's classes in tests/Walk/src/ with Pest (needs PCOV) and fail on any mutant not killed. Pass --path=<file> to scope it to one class.",
         "test:integration": "Run the PHPUnit 9.6 suite that boots WordPress through wp-phpunit against the test database.",
         "test:phpcs": "Run the WordPress security sniffs.",
         "test:pint": "Check formatting without changing files.",

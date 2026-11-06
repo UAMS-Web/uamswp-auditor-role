@@ -39,6 +39,12 @@ final class Session
     private static ?bool $from_cookie = null;
 
     /**
+     * The answer before the cookie can be validated, held for the plugin load:
+     * whether an auth cookie names an Auditor of this site.
+     */
+    private static ?bool $before_pluggable = null;
+
+    /**
      * True while the cookie is read, whose own queries pass through the guard.
      * Null otherwise; a literal default would be a line no test can cover.
      */
@@ -47,8 +53,15 @@ final class Session
     /**
      * Whether the request is an Auditor session.
      *
-     * Once WordPress has set the current user, that user decides. Before then
-     * (the request guard runs on `plugins_loaded`) the auth cookies decide.
+     * Once WordPress has set the current user, that user decides. From
+     * `plugins_loaded` (the request guard runs there) the auth cookies decide.
+     *
+     * Before then, while regular plugins load, a cookie cannot be validated:
+     * the functions that do it are pluggable and load last. A plugin that
+     * writes as it loads would pass, so the answer fails closed: an auth cookie
+     * that names an Auditor of this site is taken as an Auditor session, its
+     * HMAC unchecked. A forged cookie can only refuse its own request's writes.
+     * That answer is held apart from the validated one, which it never replaces.
      */
     public static function is_auditor(): bool
     {
@@ -60,9 +73,115 @@ final class Session
             return Role::user_is_auditor(wp_get_current_user());
         }
 
+        if (did_action('plugins_loaded') === 0) {
+            self::$before_pluggable ??= self::cookie_names_auditor();
+
+            return self::$before_pluggable;
+        }
+
         self::$from_cookie ??= self::resolve_from_cookie();
 
         return self::$from_cookie;
+    }
+
+    /**
+     * The logins the request's auth cookies name, unvalidated: each cookie
+     * WordPress's auth, secure-auth or logged-in constant names, or that has
+     * the default name, whose value has the four parts of an auth cookie.
+     *
+     * @param  array<array-key, mixed>  $cookies
+     * @param  list<string>  $names  The cookie names the constants define.
+     * @return list<string>
+     */
+    public static function cookie_logins(array $cookies, array $names): array
+    {
+        $logins = [];
+
+        foreach ($cookies as $key => $value) {
+            $named = in_array((string) $key, $names, true)
+                || preg_match('/^wordpress_(?:sec_|logged_in_)?[0-9a-f]{32}$/', (string) $key) === 1;
+
+            if (! $named || ! is_string($value)) {
+                continue;
+            }
+
+            $parts = explode('|', $value);
+
+            if (count($parts) === 4 && $parts[0] !== '') {
+                $logins[$parts[0]] = $parts[0];
+            }
+        }
+
+        return array_values($logins);
+    }
+
+    /**
+     * The auth cookie names among a set of defined constants. WordPress
+     * defines them after the must-use plugins and before the regular ones.
+     *
+     * @param  array<string, mixed>  $constants  As get_defined_constants() returns them.
+     * @return list<string>
+     */
+    public static function cookie_names(array $constants): array
+    {
+        $names = [];
+
+        foreach (['AUTH_COOKIE', 'SECURE_AUTH_COOKIE', 'LOGGED_IN_COOKIE'] as $constant) {
+            if (isset($constants[$constant]) && is_string($constants[$constant])) {
+                $names[] = $constants[$constant];
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * Whether a login holds the Auditor role on the current site, read from
+     * the database directly, because the user API needs the pluggable layer.
+     */
+    public static function login_is_auditor(string $login): bool
+    {
+        global $wpdb;
+
+        // One read, joined by login, so no user ID passes through PHP.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $caps = $wpdb->get_var($wpdb->prepare(
+            'SELECT m.meta_value FROM %i AS u INNER JOIN %i AS m ON m.user_id = u.ID WHERE u.user_login = %s AND m.meta_key = %s',
+            $wpdb->users,
+            $wpdb->usermeta,
+            $login,
+            $wpdb->get_blog_prefix().'capabilities'
+        ));
+
+        if (! is_string($caps)) {
+            return false;
+        }
+
+        // Capabilities are an array of names; an object in them is not instantiated.
+        $caps = unserialize($caps, ['allowed_classes' => false]);
+
+        return is_array($caps) && ! empty($caps[Role::NAME]);
+    }
+
+    /**
+     * Whether any auth cookie names an Auditor of this site.
+     */
+    private static function cookie_names_auditor(): bool
+    {
+        // The lookup runs queries, and the guard asks this class about each.
+        self::$resolving = true;
+
+        try {
+            foreach (self::cookie_logins($_COOKIE, self::cookie_names(get_defined_constants())) as $login) {
+                if (self::login_is_auditor($login)) {
+                    return true;
+                }
+            }
+
+            return false;
+        } finally {
+            self::$resolving = false;
+        }
     }
 
     /**
@@ -83,6 +202,7 @@ final class Session
     public static function reset(): void
     {
         self::$from_cookie = null;
+        self::$before_pluggable = null;
         self::$resolving = null;
     }
 
