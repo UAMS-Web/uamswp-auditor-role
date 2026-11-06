@@ -33,6 +33,7 @@ The compensating controls: an activity log per site (`Log`), an administrator-on
 | `uamswp_auditor_role_get_actions` | The `action` values an admin GET may carry. |
 | `uamswp_auditor_role_allow_query` | Lets one refused statement through; see [`docs/WRITES-ON-LOAD.md`](docs/WRITES-ON-LOAD.md). |
 | `uamswp_auditor_role_exempt_login_actions` | The `wp-login.php` actions that are not an Auditor session. |
+| `uamswp_auditor_role_logins` | The multisite logins, after `UAMSWP_AUDITOR_ROLE_LOGINS`. |
 
 ### WP-CLI
 
@@ -42,7 +43,7 @@ The compensating controls: an activity log per site (`Log`), an administrator-on
 | `wp auditor network-export [--file=]` | Network settings, plugins, themes and sites as JSON, every secret-bearing value masked. |
 | `wp auditor sync-sites` | Adds each login in `UAMSWP_AUDITOR_ROLE_LOGINS` to every site. |
 | `wp auditor refresh-role [--network]` | Rewrites the role. |
-| `wp auditor log list` / `export` / `prune` | Reads, exports as CSV, or prunes the log, with `--user`, `--from`, `--to`, `--event`. |
+| `wp auditor log list` / `export` | Reads the log or exports it as CSV, with `--user`, `--from`, `--to`, `--event`, and `--all-sites` on a network. Read-only: pruning is the daily scheduled job's (`wp cron event run uamswp_auditor_role_prune` runs it now). |
 
 Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php <wordpress-path>` reports from files alone.
 
@@ -91,7 +92,7 @@ Code under `includes/` is held to **mutation-clean**, not to a line-coverage per
 
 An uncovered mutant (no test reaches the line) and an untested one (a test reaches it but nothing fails) both fail the bar. Line coverage only shows what a test touched; `composer test:coverage` is for finding where to start.
 
-Read a run before trusting it. `0 Mutations for 0 Files created` is a setup failure (a wrong `--path`, no PCOV, no covering test), never a pass, and `scripts/check-mutation-run.php <log>` fails on it. A mutant whose child process crashes is scored as killed, so a run that kills everything deserves a second look: `tests/bootstrap.php` carries the fix for the one such crash found so far, between Pest's mutation stream wrapper and Patchwork.
+Read a run before trusting it. `0 Mutations for 0 Files created` is a setup failure (a wrong `--path`, no PCOV, no covering test), never a pass, and `scripts/check-mutation-run.php <log>` fails on it. A mutant whose child process crashes is scored as killed, so a run that kills everything deserves a second look: `tests/bootstrap.php` carries the fix for the one such crash found so far, between Pest's mutation stream wrapper and Patchwork. A mutant that times out also reads as killed to Pest but fails the checker, so a test that calls back into the class under test fails on re-entry instead of recursing, and test stand-ins for the database fail on a read nobody queued instead of looping.
 
 CI's `mutate` job mutates the PHP files under `includes/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything.
 
