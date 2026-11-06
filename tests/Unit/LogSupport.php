@@ -76,19 +76,41 @@ final class Uamswp_Auditor_Role_G3_Wpdb
         return $prepared;
     }
 
+    /**
+     * The next queued result. A read nothing was queued for is a test failure,
+     * not an empty result: a mutant that keeps reading (a loop whose stop
+     * condition was inverted) then fails at once, instead of running until it
+     * times out or exhausts memory, which scores it differently by machine.
+     */
     public function get_results(): mixed
     {
+        if ($this->results === []) {
+            throw new LogicException('Unexpected read: get_results()');
+        }
+
         return array_shift($this->results);
     }
 
     public function get_var(): mixed
     {
+        if ($this->vars === []) {
+            throw new LogicException('Unexpected read: get_var()');
+        }
+
         return array_shift($this->vars);
     }
 
+    /**
+     * Runs a statement. With nothing queued it deletes nothing, but past 200
+     * statements it fails, for the same reason as get_results().
+     */
     public function query(string $sql): int|false
     {
         $this->queries[] = $sql;
+
+        if (count($this->queries) > 200) {
+            throw new LogicException('Unexpected statement: more than 200 run.');
+        }
 
         return array_shift($this->query_returns) ?? 0;
     }
