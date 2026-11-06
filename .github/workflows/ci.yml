@@ -355,7 +355,7 @@ jobs:
           wp user create walker walker@example.test --role=auditor --user_pass="$WALK_PASSWORD" --quiet
           wp --exec="define('UAMSWP_AUDITOR_ROLE_LOGINS', 'walker');" auditor sync-sites
           for url in $(wp site list --field=url); do wp option get blogname --url="$url" > /dev/null; done
-          wp mu-plugin list
+          wp plugin list --status=must-use --fields=name,status
 
       - name: Serve it
         run: |
