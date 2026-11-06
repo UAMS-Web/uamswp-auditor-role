@@ -26,6 +26,8 @@ parameters:
         analyseAndScan:
             # Stand-ins for the Unit suite; the analyzer reads WordPress' own stubs.
             - tests/Support/wordpress-classes.php
+            - tests/Support/wordpress-site.php
+            - tests/Support/wp-cli-double.php
 
     # WordPress' test classes ship with wp-phpunit, not with WordPress.
     # Needs `composer setup:integration` to have run.

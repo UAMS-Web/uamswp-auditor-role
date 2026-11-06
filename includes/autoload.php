@@ -10,7 +10,11 @@
 
 declare(strict_types=1);
 
-defined('ABSPATH') || exit;
+/*
+ * No direct-access guard: the file only registers an autoloader, so a direct
+ * request to it prints nothing and loads nothing. A guard here would run while
+ * the test bootstrap loads the file, before any test, where no test can cover it.
+ */
 
 spl_autoload_register(static function (string $class): void {
     $prefix = 'UAMSWeb\\AuditorRole\\';

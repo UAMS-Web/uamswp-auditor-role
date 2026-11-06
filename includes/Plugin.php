@@ -37,7 +37,8 @@ final class Plugin
         add_action('init', [Role::class, 'maybe_register'], 0);
         add_action('init', [self::class, 'load_textdomain']);
 
-        if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
+        // WP-CLI defines WP_CLI as true; nothing else defines it.
+        if (defined('WP_CLI')) {
             \WP_CLI::add_command('auditor', AuditorCommand::class);
             \WP_CLI::add_command('auditor log', LogCommand::class);
         }
