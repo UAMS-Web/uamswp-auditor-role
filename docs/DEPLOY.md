@@ -56,7 +56,7 @@ wp role list | grep auditor        # appears after the first request on each sit
 
 ## Remove
 
-A must-use plugin is never uninstalled from the Plugins screen. To remove it:
+A must-use plugin is never uninstalled from the Plugins screen. To end one auditor's access instead, follow [`OPERATIONS.md`](OPERATIONS.md#offboarding-an-auditor). To remove the plugin:
 
 1. Export the log: `wp auditor log export --all-sites --file=auditor-log.csv` on a network, or without `--all-sites` on a single site.
 2. Delete the role on each site, while the guard is still loaded: `wp role delete auditor`, with `--url=` per site on a multisite network. Accounts that held only the role are left with none.
