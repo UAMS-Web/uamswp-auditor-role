@@ -21,17 +21,6 @@ final class Retention
     /** The scheduled hook. */
     public const HOOK = 'uamswp_auditor_role_prune';
 
-    public const DEFAULT_DAYS = 365;
-
-    public const MIN_DAYS = 1;
-
-    public const MAX_DAYS = 3650;
-
-    /** Rows deleted per statement, and the most statements one run issues. */
-    private const BATCH = 1000;
-
-    private const MAX_BATCHES = 100;
-
     public static function boot(): void
     {
         add_action('init', [self::class, 'schedule'], 20);
@@ -39,11 +28,36 @@ final class Retention
     }
 
     /**
+     * The retention when none is set: a year. The three limits are methods,
+     * not constants, so each value is a line a test is seen to cover.
+     */
+    public static function default_days(): int
+    {
+        return 365;
+    }
+
+    /**
+     * The shortest retention: a day.
+     */
+    public static function min_days(): int
+    {
+        return 1;
+    }
+
+    /**
+     * The longest retention: ten years.
+     */
+    public static function max_days(): int
+    {
+        return 3650;
+    }
+
+    /**
      * The retention in days on the current site.
      */
     public static function days(): int
     {
-        return self::clamp(get_option(self::OPTION, self::DEFAULT_DAYS));
+        return self::clamp(get_option(self::OPTION, self::default_days()));
     }
 
     /**
@@ -51,21 +65,36 @@ final class Retention
      */
     public static function clamp(mixed $days): int
     {
-        $days = is_numeric($days) ? (int) $days : self::DEFAULT_DAYS;
+        $days = is_numeric($days) ? (int) $days : self::default_days();
 
-        return max(self::MIN_DAYS, min(self::MAX_DAYS, $days));
+        return max(self::min_days(), min(self::max_days(), $days));
     }
 
     /**
-     * Schedule the daily prune. Never from an Auditor session, whose writes are refused.
+     * Schedule the daily prune once for the install: on the main site of a
+     * multisite network, where one run prunes every site. A subsite clears an
+     * event left from an earlier version that scheduled one per site. Never
+     * from an Auditor session, whose writes are refused.
      */
     public static function schedule(): void
     {
-        if (Session::is_auditor() || wp_next_scheduled(self::HOOK) !== false) {
+        if (Session::is_auditor()) {
             return;
         }
 
-        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::HOOK);
+        $scheduled = wp_next_scheduled(self::HOOK) !== false;
+
+        if (! is_main_site()) {
+            if ($scheduled) {
+                wp_clear_scheduled_hook(self::HOOK);
+            }
+
+            return;
+        }
+
+        if (! $scheduled) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::HOOK);
+        }
     }
 
     /**
@@ -73,7 +102,34 @@ final class Retention
      */
     public static function run(): void
     {
-        self::prune();
+        self::prune_all();
+    }
+
+    /**
+     * Prune each site's log by that site's retention.
+     *
+     * @return array<int, int> Site ID to the rows deleted there.
+     */
+    public static function prune_all(): array
+    {
+        $deleted = [];
+        $multisite = is_multisite();
+
+        foreach (Report::site_ids() as $blog_id) {
+            if ($multisite) {
+                switch_to_blog($blog_id);
+            }
+
+            try {
+                $deleted[$blog_id] = self::prune();
+            } finally {
+                if ($multisite) {
+                    restore_current_blog();
+                }
+            }
+        }
+
+        return $deleted;
     }
 
     /**
@@ -92,13 +148,14 @@ final class Retention
         $cutoff = gmdate('Y-m-d H:i:s', time() - self::days() * DAY_IN_SECONDS);
         $deleted = 0;
 
-        for ($batch = 0; $batch < self::MAX_BATCHES; $batch++) {
-            $removed = $wpdb->query($wpdb->prepare('DELETE FROM %i WHERE logged_at < %s LIMIT %d', Log::table(), $cutoff, self::BATCH)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        // At most 100 statements of 1,000 rows each per run; the next run takes the rest.
+        for ($batch = 0; $batch < 100; $batch++) {
+            $removed = $wpdb->query($wpdb->prepare('DELETE FROM %i WHERE logged_at < %s LIMIT %d', Log::table(), $cutoff, 1000)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
             $removed = is_int($removed) ? $removed : 0;
             $deleted += $removed;
 
-            if ($removed < self::BATCH) {
+            if ($removed < 1000) {
                 break;
             }
         }

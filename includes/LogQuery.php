@@ -13,8 +13,16 @@ defined('ABSPATH') || exit;
 
 final class LogQuery
 {
-    /** The columns a row has, in export order. */
-    public const COLUMNS = ['id', 'logged_at', 'user_id', 'user_login', 'blog_id', 'event', 'method', 'screen', 'url', 'detail'];
+    /**
+     * The columns a row has, in export order. A method, not a constant, so
+     * each entry is a line a test is seen to cover.
+     *
+     * @return list<string>
+     */
+    public static function columns(): array
+    {
+        return ['id', 'logged_at', 'user_id', 'user_login', 'blog_id', 'event', 'method', 'screen', 'url', 'detail'];
+    }
 
     /**
      * Clean a set of filters: a user ID, a date range and an event type.
@@ -24,24 +32,27 @@ final class LogQuery
      */
     public static function filters(array $raw): array
     {
-        $date = static function (mixed $value): string {
-            $value = is_scalar($value) ? trim((string) $value) : '';
-
-            if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) !== 1) {
-                return '';
-            }
-
-            return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $value : '';
-        };
-
-        $event = isset($raw['event']) && is_scalar($raw['event']) ? (string) $raw['event'] : '';
+        $event = $raw['event'] ?? null;
 
         return [
             'user_id' => isset($raw['user_id']) && is_numeric($raw['user_id']) ? max(0, (int) $raw['user_id']) : 0,
-            'from' => $date($raw['from'] ?? ''),
-            'to' => $date($raw['to'] ?? ''),
-            'event' => in_array($event, Log::EVENTS, true) ? $event : '',
+            'from' => self::date($raw['from'] ?? null),
+            'to' => self::date($raw['to'] ?? null),
+            'event' => is_string($event) && in_array($event, Log::events(), true) ? $event : '',
         ];
+    }
+
+    /**
+     * A Y-m-d date that exists on the calendar, surrounding space dropped, or
+     * an empty string.
+     */
+    public static function date(mixed $value): string
+    {
+        if (! is_scalar($value) || preg_match('/^\s*(?<y>\d{4})-(?<m>\d{2})-(?<d>\d{2})\s*$/', (string) $value, $m) !== 1) {
+            return '';
+        }
+
+        return checkdate((int) $m['m'], (int) $m['d'], (int) $m['y']) ? $m['y'].'-'.$m['m'].'-'.$m['d'] : '';
     }
 
     /**
@@ -147,14 +158,17 @@ final class LogQuery
     }
 
     /**
-     * Write rows matching the filters to a stream as CSV, in batches.
+     * Write rows matching the filters to a stream as CSV, in batches, after a
+     * header row unless $header is false (a later site of a multi-site export).
      *
      * @param  resource  $stream
      * @param  array{user_id: int, from: string, to: string, event: string}  $filters
      */
-    public static function write_csv($stream, array $filters): void
+    public static function write_csv($stream, array $filters, bool $header = true): void
     {
-        fputcsv($stream, self::COLUMNS, ',', '"', '');
+        if ($header) {
+            fputcsv($stream, self::columns(), ',', '"', '');
+        }
 
         $offset = 0;
 
@@ -164,7 +178,7 @@ final class LogQuery
             foreach ($rows as $row) {
                 $line = [];
 
-                foreach (self::COLUMNS as $column) {
+                foreach (self::columns() as $column) {
                     $line[] = self::csv_cell($row[$column] ?? '');
                 }
 
