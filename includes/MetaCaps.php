@@ -18,37 +18,35 @@ final class MetaCaps
     public const VIEW_LOG = 'uamswp_auditor_role_view_log';
 
     /**
-     * The meta capabilities that act, denied on top of the never-granted list.
+     * The meta capabilities that act, denied on top of the never-granted ones.
      *
-     * @var list<string>
+     * A capability that starts with `install_`, `update_` or `delete_` is denied
+     * by Role::is_never_granted() in map(), so `delete_post`, `update_php` and
+     * the like are not listed here. A method, not a constant, so each entry is
+     * a line a test is seen to cover.
+     *
+     * @return list<string>
      */
-    public const DENIED = [
-        'activate_plugin',
-        'deactivate_plugin',
-        'deactivate_plugins',
-        'resume_plugin',
-        'resume_theme',
-        'switch_theme',
-        'delete_post',
-        'delete_page',
-        'publish_post',
-        'delete_term',
-        'delete_comment',
-        'delete_user',
-        'remove_user',
-        'promote_user',
-        'create_app_password',
-        'edit_app_password',
-        'delete_app_password',
-        'delete_app_passwords',
-        'update_https',
-        'update_php',
-        'erase_others_personal_data',
-        'export_others_personal_data',
-        'edit_css',
-        'install_languages',
-        'upgrade_db',
-    ];
+    public static function defaults(): array
+    {
+        return [
+            'activate_plugin',
+            'deactivate_plugin',
+            'deactivate_plugins',
+            'resume_plugin',
+            'resume_theme',
+            'switch_theme',
+            'publish_post',
+            'remove_user',
+            'promote_user',
+            'create_app_password',
+            'edit_app_password',
+            'erase_others_personal_data',
+            'export_others_personal_data',
+            'edit_css',
+            'upgrade_db',
+        ];
+    }
 
     /** @var list<string>|null The denied list, held after `init`. */
     private static ?array $denied = null;
@@ -59,9 +57,10 @@ final class MetaCaps
     }
 
     /**
-     * The capabilities denied to an Auditor on this install.
-     *
-     * A filter can add to the list; the never-granted capabilities stay on it.
+     * The meta capabilities denied to an Auditor on this install: the defaults
+     * and a deployment's additions, each name once. A filter can add to the
+     * list but not drop a default. The never-granted capabilities are checked
+     * by name in map(), so they are not repeated here.
      *
      * @return list<string>
      */
@@ -71,9 +70,10 @@ final class MetaCaps
             return self::$denied;
         }
 
-        $denied = apply_filters('uamswp_auditor_role_denied_caps', self::DENIED);
-        $denied = is_array($denied) ? array_filter($denied, is_string(...)) : [];
-        $denied = array_values(array_unique(array_merge(self::DENIED, Role::NEVER_GRANTED, $denied)));
+        $defaults = self::defaults();
+        $added = apply_filters('uamswp_auditor_role_denied_caps', $defaults);
+        $added = is_array($added) ? array_filter($added, is_string(...)) : [];
+        $denied = array_values(array_unique(array_merge($defaults, $added)));
 
         // Held once `init` has run, when every plugin has had the chance to filter it.
         if (did_action('init') > 0) {
@@ -115,9 +115,11 @@ final class MetaCaps
         }
 
         if ($cap === 'edit_user') {
-            $target = is_array($args) && isset($args[0]) ? (int) $args[0] : 0;
+            if (! is_array($args) || ! isset($args[0])) {
+                return ['do_not_allow'];
+            }
 
-            return $target === $user_id ? $caps : ['do_not_allow'];
+            return (int) $args[0] === $user_id ? $caps : ['do_not_allow'];
         }
 
         if (in_array($cap, self::denied(), true) || Role::is_never_granted($cap)) {

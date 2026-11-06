@@ -37,78 +37,69 @@ final class Role
      * `upload_files` opens the Media library and `manage_categories` the term
      * screens, for the same reason.
      *
-     * @var list<string>
+     * A method, not a constant, so each entry is a line a test is seen to cover.
+     *
+     * @return list<string>
      */
-    public const GRANTED = [
-        'read',
-        'read_private_posts',
-        'read_private_pages',
-        'edit_posts',
-        'edit_pages',
-        'upload_files',
-        'manage_categories',
-        'activate_plugins',
-        'switch_themes',
-        'edit_theme_options',
-        'view_site_health_checks',
-        'manage_options',
-    ];
+    public static function granted(): array
+    {
+        return [
+            'read',
+            'read_private_posts',
+            'read_private_pages',
+            'edit_posts',
+            'edit_pages',
+            'upload_files',
+            'manage_categories',
+            'activate_plugins',
+            'switch_themes',
+            'edit_theme_options',
+            'view_site_health_checks',
+            'manage_options',
+        ];
+    }
 
     /**
-     * The capabilities the role never holds, whatever a filter or another plugin adds.
+     * The capabilities the role never holds by name, whatever a filter or
+     * another plugin adds. Every `install_`, `update_` and `delete_` capability
+     * is never granted too, by the prefix rule in is_never_granted(), so none
+     * is listed here.
      *
-     * @var list<string>
+     * @return list<string>
      */
-    public const NEVER_GRANTED = [
-        'install_plugins',
-        'install_themes',
-        'install_languages',
-        'update_plugins',
-        'update_themes',
-        'update_core',
-        'update_languages',
-        'upload_plugins',
-        'upload_themes',
-        'delete_plugins',
-        'delete_themes',
-        'delete_users',
-        'delete_sites',
-        'delete_posts',
-        'delete_pages',
-        'delete_others_posts',
-        'delete_others_pages',
-        'delete_published_posts',
-        'delete_published_pages',
-        'delete_private_posts',
-        'delete_private_pages',
-        'delete_site',
-        'edit_plugins',
-        'edit_themes',
-        'edit_files',
-        'edit_users',
-        'create_users',
-        'promote_users',
-        'remove_users',
-        'add_users',
-        'list_users',
-        'export',
-        'import',
-        'unfiltered_html',
-        'unfiltered_upload',
-        'publish_posts',
-        'publish_pages',
-        'resume_plugins',
-        'resume_themes',
-        'create_sites',
-        'manage_sites',
-        'manage_network',
-        'manage_network_users',
-        'manage_network_plugins',
-        'manage_network_themes',
-        'manage_network_options',
-        'upgrade_network',
-        'setup_network',
-    ];
+    public static function never_granted(): array
+    {
+        return [
+            'upload_plugins',
+            'upload_themes',
+            'edit_plugins',
+            'edit_themes',
+            'edit_files',
+            'edit_users',
+            'create_users',
+            'promote_users',
+            'remove_users',
+            'add_users',
+            'list_users',
+            'export',
+            'import',
+            'unfiltered_html',
+            'unfiltered_upload',
+            'publish_posts',
+            'publish_pages',
+            'resume_plugins',
+            'resume_themes',
+            'create_sites',
+            'manage_sites',
+            'manage_network',
+            'manage_network_users',
+            'manage_network_plugins',
+            'manage_network_themes',
+            'manage_network_options',
+            'upgrade_network',
+            'setup_network',
+        ];
+    }
 
     /**
      * The capabilities the role holds on this install: the granted list plus a
@@ -118,18 +109,19 @@ final class Role
      */
     public static function capabilities(): array
     {
-        $added = apply_filters('uamswp_auditor_role_capabilities', self::GRANTED);
-        $added = is_array($added) ? $added : self::GRANTED;
+        $granted = self::granted();
+        $added = apply_filters('uamswp_auditor_role_capabilities', $granted);
+        $added = is_array($added) ? $added : $granted;
 
         $capabilities = [];
 
-        foreach (array_merge(self::GRANTED, $added) as $capability) {
+        foreach (array_merge($granted, $added) as $capability) {
             if (is_string($capability) && $capability !== '' && ! self::is_never_granted($capability)) {
-                $capabilities[$capability] = true;
+                $capabilities[$capability] = $capability;
             }
         }
 
-        return array_keys($capabilities);
+        return array_values($capabilities);
     }
 
     /**
@@ -142,17 +134,18 @@ final class Role
      */
     public static function is_never_granted(string $capability): bool
     {
-        return in_array($capability, self::NEVER_GRANTED, true)
+        return in_array($capability, self::never_granted(), true)
             || preg_match('/^(install|update|delete)_/', $capability) === 1;
     }
 
     /**
      * The stamp stored per site: the definition version and a hash of the
-     * capability list, so a changed filter also rewrites the role.
+     * capability list, so a changed filter also rewrites the role. A
+     * capability name never holds a comma, so the joined list is unambiguous.
      */
     public static function stamp(): string
     {
-        return self::VERSION.':'.md5((string) wp_json_encode(self::capabilities()));
+        return self::VERSION.':'.md5(implode(',', self::capabilities()));
     }
 
     /**
