@@ -34,12 +34,11 @@ final class Secrets
     {
         // A query string or a config blob that carries a secret-named parameter,
         // such as a saved migration form with its connection key.
-        if (preg_match('/(^|[&?;\s])([a-z0-9_\-\[\]]+)=/i', $value) === 1
-            && preg_match_all('/(?:^|[&?;\s])([a-z0-9_\-\[\]]+)=/i', $value, $names) > 0) {
-            foreach ($names[1] as $param) {
-                if (self::is_secret_name($param)) {
-                    return true;
-                }
+        preg_match_all('/(?:^|[&?;\s])([a-z0-9_\-\[\]]+)=/i', $value, $names);
+
+        foreach ($names[1] as $param) {
+            if (self::is_secret_name($param)) {
+                return true;
             }
         }
 

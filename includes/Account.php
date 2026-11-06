@@ -19,8 +19,12 @@ final class Account
     /** The user meta holding the optional end date, as Y-m-d in the site's time zone. */
     public const END_DATE = 'uamswp_auditor_role_end_date';
 
-    /** The nonce action and field for the end date on another user's profile. */
-    public const NONCE = 'uamswp_auditor_role_end_date';
+    /**
+     * The nonce action and field for the end date on another user's profile.
+     * Not the date field's own name: the two shared one, the date overwrote the
+     * nonce in the submitted form, and the profile save failed its nonce check.
+     */
+    public const NONCE = 'uamswp_auditor_role_end_date_nonce';
 
     public static function boot(): void
     {
@@ -51,11 +55,11 @@ final class Account
     {
         $date = trim($date);
 
-        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m) !== 1) {
+        if (preg_match('/^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})$/', $date, $m) !== 1) {
             return '';
         }
 
-        return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $date : '';
+        return checkdate((int) $m['month'], (int) $m['day'], (int) $m['year']) ? $date : '';
     }
 
     /**
@@ -80,13 +84,19 @@ final class Account
      */
     public static function refuse_expired_login(mixed $user): mixed
     {
-        if ($user instanceof WP_User && Role::user_is_auditor($user) && self::is_expired($user->ID)) {
-            Log::write('login_refused', $user->ID, $user->user_login, 'end date '.self::end_date($user->ID));
-
-            return new WP_Error('uamswp_auditor_role_expired', __('This Auditor account has reached its end date.', 'uamswp-auditor-role'));
+        // user_is_auditor() is true only for a WP_User.
+        if (! Role::user_is_auditor($user)) {
+            return $user;
         }
 
-        return $user;
+        /** @var WP_User $user */
+        if (! self::is_expired($user->ID)) {
+            return $user;
+        }
+
+        Log::write('login_refused', $user->ID, $user->user_login, 'end date '.self::end_date($user->ID));
+
+        return new WP_Error('uamswp_auditor_role_expired', __('This Auditor account has reached its end date.', 'uamswp-auditor-role'));
     }
 
     /**
@@ -99,7 +109,7 @@ final class Account
         }
 
         $user = wp_get_current_user();
-        Log::write('login_refused', (int) $user->ID, $user->user_login, 'session ended at end date');
+        Log::write('login_refused', $user->ID, $user->user_login, 'session ended at end date');
 
         wp_destroy_all_sessions();
         wp_clear_auth_cookie();
@@ -148,7 +158,7 @@ final class Account
         }
 
         /** @var WP_User $user */
-        $end = self::end_date((int) $user->ID);
+        $end = self::end_date($user->ID);
         ?>
         <h2><?php esc_html_e('Read-only audit mode', 'uamswp-auditor-role'); ?></h2>
         <p><?php esc_html_e('This profile cannot be changed. To set a new password, use "Lost your password?" on the sign-in screen.', 'uamswp-auditor-role'); ?></p>
@@ -173,7 +183,7 @@ final class Account
         }
 
         /** @var WP_User $user */
-        if (! current_user_can('promote_user', (int) $user->ID)) {
+        if (! current_user_can('promote_user', $user->ID)) {
             return;
         }
 
@@ -184,7 +194,7 @@ final class Account
             <tr>
                 <th><label for="uamswp-auditor-role-end-date"><?php esc_html_e('End date', 'uamswp-auditor-role'); ?></label></th>
                 <td>
-                    <input type="date" id="uamswp-auditor-role-end-date" name="<?php echo esc_attr(self::END_DATE); ?>" value="<?php echo esc_attr(self::end_date((int) $user->ID)); ?>">
+                    <input type="date" id="uamswp-auditor-role-end-date" name="<?php echo esc_attr(self::END_DATE); ?>" value="<?php echo esc_attr(self::end_date($user->ID)); ?>">
                     <p class="description"><?php esc_html_e('Optional. The account can sign in through this date, in the site time zone, and is refused after it. Leave empty for no end date.', 'uamswp-auditor-role'); ?></p>
                 </td>
             </tr>

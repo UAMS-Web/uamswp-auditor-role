@@ -46,3 +46,29 @@ it('masks a value that looks like a token whatever its name', function (): void 
         ->and(Secrets::mask('form_data', 'action=savefile&create_backup=1'))->toBe('action=savefile&create_backup=1')
         ->and(Secrets::mask('sig', 'abc'))->toBe(Secrets::MASK);
 });
+
+it('reads each parameter name of a query string, not its separator', function (string $value): void {
+    // `key` matches only as a whole name, so a run that read `&key=` instead of `key` would let it through.
+    expect(Secrets::looks_like_secret($value))->toBeTrue();
+})->with([
+    'first parameter' => ['key=abc&x=1'],
+    'later parameter' => ['x=1&key=abc'],
+    'semicolon separated' => ['x=1;sig=abc'],
+]);
+
+// The dataset spells the mask out: a class constant here would load the class while
+// Pest collects the tests, before any test runs, and leave its guard line uncovered.
+it('keeps an empty secret value as it is and masks any other', function (mixed $value, mixed $expected): void {
+    expect(Secrets::mask('api_key', $value))->toBe($expected);
+})->with([
+    'empty string' => ['', ''],
+    'null' => [null, null],
+    'false' => [false, false],
+    'true' => [true, '[masked]'],
+    'zero' => [0, '[masked]'],
+    'text' => ['x', '[masked]'],
+]);
+
+it('recurses into a list by position', function (): void {
+    expect(Secrets::mask('servers', ['smtp.example.org', ['password' => 'p']]))->toBe(['smtp.example.org', ['password' => Secrets::MASK]]);
+});

@@ -13,17 +13,14 @@ defined('ABSPATH') || exit;
 
 final class DatabaseGuard
 {
-    /** How many refused statements a request keeps for its log row. */
-    private const KEEP = 10;
+    /**
+     * True while a bypass() call is open: the plugin's own writes pass. Null,
+     * not false, when none is, so the starting state is the absence of a value.
+     */
+    private static ?bool $bypass = null;
 
-    /** Nesting depth of bypass(); above zero, the plugin's own writes pass. */
-    private static int $bypass = 0;
-
-    /** @var list<string> The refused statements, described without their values. */
+    /** @var list<string> Every refused statement in this request, described without its values. */
     private static array $refused = [];
-
-    /** How many statements were refused, including those not kept. */
-    private static int $refused_count = 0;
 
     /**
      * Register the filter last, so it sees the statement every other filter built.
@@ -42,7 +39,7 @@ final class DatabaseGuard
      */
     public static function filter(mixed $query): mixed
     {
-        if (! is_string($query) || self::$bypass > 0 || self::is_read($query) || ! Session::is_auditor()) {
+        if (! is_string($query) || self::$bypass === true || self::is_read($query) || ! Session::is_auditor()) {
             return $query;
         }
 
@@ -52,11 +49,7 @@ final class DatabaseGuard
             return $query;
         }
 
-        self::$refused_count++;
-
-        if (count(self::$refused) < self::KEEP) {
-            self::$refused[] = self::describe($query);
-        }
+        self::$refused[] = self::describe($query);
 
         return '';
     }
@@ -71,12 +64,14 @@ final class DatabaseGuard
      */
     public static function bypass(callable $callback): mixed
     {
-        self::$bypass++;
+        // Saved and restored, so a nested call leaves the outer one open.
+        $outer = self::$bypass;
+        self::$bypass = true;
 
         try {
             return $callback();
         } finally {
-            self::$bypass--;
+            self::$bypass = $outer;
         }
     }
 
@@ -91,11 +86,11 @@ final class DatabaseGuard
     {
         $query = self::strip_leading($query);
 
-        if (preg_match('/^([a-z]+)\b/i', $query, $match) !== 1) {
+        if (preg_match('/^[a-z]+\b/i', $query, $match) !== 1) {
             return false;
         }
 
-        $verb = strtoupper($match[1]);
+        $verb = strtoupper($match[0]);
 
         if ($verb === 'SET') {
             return preg_match('/^SET\s+(SESSION\s|NAMES\s|@)/i', $query) === 1;
@@ -122,7 +117,7 @@ final class DatabaseGuard
             return strtoupper($m[1]).' '.$m[2].self::describe_option($query, $m[2]);
         }
 
-        return preg_match('/^([a-z]+)/i', $query, $m) === 1 ? strtoupper($m[1]) : 'UNKNOWN';
+        return preg_match('/^[a-z]+/i', $query, $m) === 1 ? strtoupper($m[0]) : 'UNKNOWN';
     }
 
     /**
@@ -144,21 +139,22 @@ final class DatabaseGuard
     }
 
     /**
-     * The statements refused so far in this request, described.
+     * The first ten statements refused so far in this request, described: what
+     * a log row keeps.
      *
      * @return list<string>
      */
     public static function refused(): array
     {
-        return self::$refused;
+        return array_slice(self::$refused, 0, 10);
     }
 
     /**
-     * How many statements were refused so far in this request.
+     * How many statements were refused so far in this request, kept or not.
      */
     public static function refused_count(): int
     {
-        return self::$refused_count;
+        return count(self::$refused);
     }
 
     /**
@@ -167,8 +163,7 @@ final class DatabaseGuard
     public static function reset(): void
     {
         self::$refused = [];
-        self::$refused_count = 0;
-        self::$bypass = 0;
+        self::$bypass = null;
     }
 
     /**
@@ -185,11 +180,8 @@ final class DatabaseGuard
      */
     private static function strip_leading(string $query): string
     {
-        $previous = null;
-
-        while ($previous !== $query) {
-            $previous = $query;
-            $query = (string) preg_replace('/^(\s+|\(|\/\*.*?\*\/|(--\s|#)[^\n]*(\n|$))/s', '', $query);
+        if (preg_match('/^(?:\s+|\(|\/\*.*?\*\/|(?:--\s|#)[^\n]*(?:\n|$))+/s', $query, $m) === 1) {
+            return substr($query, strlen($m[0]));
         }
 
         return $query;
