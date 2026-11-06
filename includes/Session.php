@@ -18,23 +18,31 @@ final class Session
      * back, which that plugin verifies itself. Each runs before or instead of
      * the account's own session, so none can change the site as the auditor.
      *
-     * @var list<string>
+     * A method, not a constant, so each entry is a line a test is seen to cover.
+     *
+     * @return list<string>
      */
-    public const EXEMPT_LOGIN_ACTIONS = [
-        'login',
-        'lostpassword',
-        'retrievepassword',
-        'rp',
-        'resetpass',
-        'postpass',
-        'switch_to_olduser',
-    ];
+    public static function exempt_login_actions(): array
+    {
+        return [
+            'login',
+            'lostpassword',
+            'retrievepassword',
+            'rp',
+            'resetpass',
+            'postpass',
+            'switch_to_olduser',
+        ];
+    }
 
     /** The cookie result, held until WordPress sets the current user. */
     private static ?bool $from_cookie = null;
 
-    /** Set while the cookie is read, whose own queries pass through the guard. */
-    private static bool $resolving = false;
+    /**
+     * True while the cookie is read, whose own queries pass through the guard.
+     * Null otherwise; a literal default would be a line no test can cover.
+     */
+    private static ?bool $resolving = null;
 
     /**
      * Whether the request is an Auditor session.
@@ -44,7 +52,7 @@ final class Session
      */
     public static function is_auditor(): bool
     {
-        if (self::$resolving || self::is_exempt_login()) {
+        if (self::$resolving === true || self::is_exempt_login()) {
             return false;
         }
 
@@ -75,7 +83,7 @@ final class Session
     public static function reset(): void
     {
         self::$from_cookie = null;
-        self::$resolving = false;
+        self::$resolving = null;
     }
 
     /**
@@ -106,9 +114,10 @@ final class Session
         // A read of the routing parameter only; wp-login.php verifies each action itself.
         $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : 'login'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-        $exempt = apply_filters('uamswp_auditor_role_exempt_login_actions', self::EXEMPT_LOGIN_ACTIONS);
+        $defaults = self::exempt_login_actions();
+        $exempt = apply_filters('uamswp_auditor_role_exempt_login_actions', $defaults);
 
-        return in_array($action === '' ? 'login' : $action, is_array($exempt) ? $exempt : self::EXEMPT_LOGIN_ACTIONS, true);
+        return in_array($action === '' ? 'login' : $action, is_array($exempt) ? $exempt : $defaults, true);
     }
 
     private static function resolve_from_cookie(): bool
@@ -136,11 +145,13 @@ final class Session
      */
     private static function cookie_user_id(): int
     {
-        if (! function_exists('wp_validate_auth_cookie')) {
+        // The cookie functions are pluggable, loaded just before `plugins_loaded`.
+        if (did_action('plugins_loaded') === 0) {
             return 0;
         }
 
-        $was_resolving = self::$resolving;
+        // The cookie's own user lookup runs queries, and the guard asks this
+        // class about each one; while the flag is set the answer is no.
         self::$resolving = true;
 
         try {
@@ -150,7 +161,7 @@ final class Session
                 $id = wp_validate_auth_cookie('', 'logged_in');
             }
         } finally {
-            self::$resolving = $was_resolving;
+            self::$resolving = false;
         }
 
         return is_int($id) ? $id : 0;
