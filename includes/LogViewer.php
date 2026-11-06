@@ -25,8 +25,26 @@ final class LogViewer
     /** The nonce field name. */
     public const NONCE = 'uamswp_auditor_role_nonce';
 
-    /** Rows per page. */
-    private const PER_PAGE = 50;
+    /**
+     * Sends one response header. Null in production, which calls header(); the
+     * tests set a recorder, because PHP's CLI records no header.
+     */
+    public static ?\Closure $send_header = null;
+
+    /**
+     * Ends the request after the CSV stream or the redirect. Null in
+     * production, which exits; the tests set a callable that throws.
+     */
+    public static ?\Closure $terminate = null;
+
+    /**
+     * Rows per page. A method, not a constant, so the value is a line a test is
+     * seen to cover.
+     */
+    public static function per_page(): int
+    {
+        return 50;
+    }
 
     public static function boot(): void
     {
@@ -62,8 +80,8 @@ final class LogViewer
         $filters = LogQuery::filters(wp_unslash($_GET)); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $total = LogQuery::count($filters);
-        $rows = LogQuery::rows($filters, self::PER_PAGE, ($paged - 1) * self::PER_PAGE);
-        $pages = (int) ceil($total / self::PER_PAGE);
+        $rows = LogQuery::rows($filters, self::per_page(), ($paged - 1) * self::per_page());
+        $pages = (int) ceil($total / self::per_page());
         $last_prune = get_option(Retention::LAST_PRUNE);
         $saved = isset($_GET['retention-saved']); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         ?>
@@ -80,7 +98,7 @@ final class LogViewer
                 <select id="uamswp-auditor-log-user" name="user_id">
                     <option value="0"><?php esc_html_e('All', 'uamswp-auditor-role'); ?></option>
                     <?php foreach (LogQuery::users() as $id => $login) { ?>
-                        <option value="<?php echo esc_attr((string) $id); ?>" <?php selected($filters['user_id'], $id); ?>><?php echo esc_html($login); ?></option>
+                        <option value="<?php echo absint($id); ?>" <?php selected($filters['user_id'], $id); ?>><?php echo esc_html($login); ?></option>
                     <?php } ?>
                 </select>
                 <label for="uamswp-auditor-log-from"><?php esc_html_e('From', 'uamswp-auditor-role'); ?></label>
@@ -90,7 +108,7 @@ final class LogViewer
                 <label for="uamswp-auditor-log-event"><?php esc_html_e('Event', 'uamswp-auditor-role'); ?></label>
                 <select id="uamswp-auditor-log-event" name="event">
                     <option value=""><?php esc_html_e('All', 'uamswp-auditor-role'); ?></option>
-                    <?php foreach (Log::EVENTS as $event) { ?>
+                    <?php foreach (Log::events() as $event) { ?>
                         <option value="<?php echo esc_attr($event); ?>" <?php selected($filters['event'], $event); ?>><?php echo esc_html($event); ?></option>
                     <?php } ?>
                 </select>
@@ -100,7 +118,7 @@ final class LogViewer
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:8px">
                 <input type="hidden" name="action" value="<?php echo esc_attr(self::EXPORT); ?>">
                 <?php wp_nonce_field(self::EXPORT, self::NONCE); ?>
-                <input type="hidden" name="user_id" value="<?php echo esc_attr((string) $filters['user_id']); ?>">
+                <input type="hidden" name="user_id" value="<?php echo absint($filters['user_id']); ?>">
                 <input type="hidden" name="from" value="<?php echo esc_attr($filters['from']); ?>">
                 <input type="hidden" name="to" value="<?php echo esc_attr($filters['to']); ?>">
                 <input type="hidden" name="event" value="<?php echo esc_attr($filters['event']); ?>">
@@ -147,7 +165,7 @@ final class LogViewer
             <?php if ($pages > 1) { ?>
                 <div class="tablenav"><div class="tablenav-pages">
                     <?php
-                echo wp_kses_post((string) paginate_links([
+                echo wp_kses_post(paginate_links([
                     'base' => add_query_arg('paged', '%#%'),
                     'format' => '',
                     'current' => $paged,
@@ -163,7 +181,7 @@ final class LogViewer
                 <?php wp_nonce_field(self::RETENTION, self::NONCE); ?>
                 <p>
                     <label for="uamswp-auditor-log-retention"><?php esc_html_e('Keep rows for this many days', 'uamswp-auditor-role'); ?></label>
-                    <input type="number" id="uamswp-auditor-log-retention" name="retention_days" min="<?php echo esc_attr((string) Retention::MIN_DAYS); ?>" max="<?php echo esc_attr((string) Retention::MAX_DAYS); ?>" value="<?php echo esc_attr((string) Retention::days()); ?>" class="small-text">
+                    <input type="number" id="uamswp-auditor-log-retention" name="retention_days" min="<?php echo absint(Retention::min_days()); ?>" max="<?php echo absint(Retention::max_days()); ?>" value="<?php echo absint(Retention::days()); ?>" class="small-text">
                 </p>
                 <p class="description">
                     <?php
@@ -200,17 +218,17 @@ final class LogViewer
         $filters = LogQuery::filters(wp_unslash($_POST)); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
 
         nocache_headers();
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="auditor-log-'.gmdate('Y-m-d').'.csv"');
+        self::send_header('Content-Type: text/csv; charset=utf-8');
+        self::send_header('Content-Disposition: attachment; filename="auditor-log-'.gmdate('Y-m-d').'.csv"');
 
         $out = fopen('php://output', 'w');
 
-        if ($out !== false) {
+        // Left open: the request ends right after the stream, which closes it.
+        if (is_resource($out)) {
             LogQuery::write_csv($out, $filters);
-            fclose($out); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         }
 
-        exit;
+        self::terminate();
     }
 
     /**
@@ -225,11 +243,31 @@ final class LogViewer
         check_admin_referer(self::RETENTION, self::NONCE);
 
         // The nonce was verified above.
-        $days = isset($_POST['retention_days']) ? sanitize_text_field(wp_unslash($_POST['retention_days'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $days = isset($_POST['retention_days']) ? sanitize_text_field(wp_unslash($_POST['retention_days'])) : null; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
         update_option(Retention::OPTION, Retention::clamp($days), false);
 
         wp_safe_redirect(add_query_arg(['page' => self::PAGE, 'retention-saved' => '1'], admin_url('tools.php')));
+        self::terminate();
+    }
+
+    /**
+     * Send one response header.
+     */
+    private static function send_header(string $header): void
+    {
+        (self::$send_header ?? header(...))($header);
+    }
+
+    /**
+     * End the request.
+     */
+    private static function terminate(): never
+    {
+        (self::$terminate ?? static function (): never {
+            exit;
+        })();
+
         exit;
     }
 }
