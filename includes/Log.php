@@ -24,17 +24,14 @@ final class Log
     /** The option that records the installed schema on a site. */
     public const OPTION = 'uamswp_auditor_role_log_schema';
 
-    /** The events a row can record. */
-    public const EVENTS = ['view', 'refused', 'db_refused', 'login', 'logout', 'login_refused'];
-
     /**
      * Query parameters whose values are dropped from a logged URL, because they
      * carry a nonce, a password, a key or a token.
      */
     private const SECRET_PARAM = '/nonce|pass|pwd|token|key|secret|auth|hash|code|signature|session/i';
 
-    /** Whether the request's own row was written. */
-    private static bool $recorded = false;
+    /** True once the request's own row was written; null until then. */
+    private static ?bool $recorded = null;
 
     public static function boot(): void
     {
@@ -42,6 +39,25 @@ final class Log
         add_action('shutdown', [self::class, 'record_request'], 0);
         add_action('wp_login', [self::class, 'record_login'], 10, 2);
         add_action('wp_logout', [self::class, 'record_logout']);
+    }
+
+    /**
+     * The events a row can record. A method, not a constant, so each entry is
+     * a line a test is seen to cover.
+     *
+     * @return list<string>
+     */
+    public static function events(): array
+    {
+        return ['view', 'refused', 'db_refused', 'login', 'logout', 'login_refused'];
+    }
+
+    /**
+     * The core file that defines dbDelta().
+     */
+    public static function upgrade_file(): string
+    {
+        return ABSPATH.'wp-admin/includes/upgrade.php';
     }
 
     /**
@@ -72,7 +88,9 @@ final class Log
         global $wpdb;
 
         DatabaseGuard::bypass(static function () use ($wpdb): void {
-            require_once ABSPATH.'wp-admin/includes/upgrade.php';
+            if (! function_exists('dbDelta')) {
+                require_once self::upgrade_file();
+            }
 
             $table = self::table();
             $collate = $wpdb->get_charset_collate();
@@ -131,38 +149,61 @@ final class Log
     }
 
     /**
-     * At the end of an Auditor request, record the page load or the refusal,
-     * and any refused statements.
+     * At the end of an Auditor request, record it in one row.
      *
-     * Allowed AJAX, REST and cron requests are not page loads and are left out,
-     * so Heartbeat does not fill the log.
+     * A refused request is a `refused` row. A request whose statements the
+     * database guard refused is a `db_refused` row, unless the request itself
+     * was refused, whose row then carries both. Any other page load is a `view`
+     * row. Allowed AJAX, REST and cron requests are not page loads and get no
+     * row unless a statement was refused, so Heartbeat does not fill the log.
      */
     public static function record_request(): void
     {
-        if (self::$recorded || ! Session::is_auditor()) {
+        if (self::$recorded === true || ! Session::is_auditor()) {
             return;
         }
 
         self::$recorded = true;
 
+        $row = self::request_row(RequestGuard::refusal(), DatabaseGuard::refused_count(), DatabaseGuard::refused(), self::is_page_load());
+
+        if ($row === null) {
+            return;
+        }
+
         $user_id = Session::user_id();
         $user = get_userdata($user_id);
-        $login = $user instanceof WP_User ? $user->user_login : '';
-        $refusal = RequestGuard::refusal();
+
+        self::write($row[0], $user_id, $user instanceof WP_User ? $user->user_login : '', $row[1]);
+    }
+
+    /**
+     * The event and detail of a request's row, or null for no row.
+     *
+     * @param  list<string>  $statements  The refused statements, described.
+     * @return array{0: string, 1: string}|null
+     */
+    public static function request_row(?string $refusal, int $refused_count, array $statements, bool $page_load): ?array
+    {
+        $statements_detail = $refused_count > 0 ? $refused_count.' refused: '.implode('; ', $statements) : '';
 
         if ($refusal !== null) {
-            self::write('refused', $user_id, $login, $refusal);
-        } elseif (! wp_doing_ajax() && ! wp_doing_cron() && (! defined('REST_REQUEST') || ! REST_REQUEST)) {
-            self::write('view', $user_id, $login);
+            return ['refused', $statements_detail === '' ? $refusal : $refusal.'; '.$statements_detail];
         }
 
-        if (DatabaseGuard::refused_count() > 0) {
-            self::write('db_refused', $user_id, $login, sprintf(
-                '%d refused: %s',
-                DatabaseGuard::refused_count(),
-                implode('; ', DatabaseGuard::refused())
-            ));
+        if ($statements_detail !== '') {
+            return ['db_refused', $statements_detail];
         }
+
+        return $page_load ? ['view', ''] : null;
+    }
+
+    /**
+     * Whether the request is a page load: not AJAX, not cron, not REST.
+     */
+    public static function is_page_load(): bool
+    {
+        return ! wp_doing_ajax() && ! wp_doing_cron() && ! wp_is_serving_rest_request();
     }
 
     /**
@@ -172,7 +213,7 @@ final class Log
     {
         if (Role::user_is_auditor($user)) {
             /** @var WP_User $user */
-            self::write('login', (int) $user->ID, $user->user_login);
+            self::write('login', $user->ID, $user->user_login);
         }
     }
 
@@ -181,11 +222,15 @@ final class Log
      */
     public static function record_logout(mixed $user_id): void
     {
-        $user = get_userdata(is_int($user_id) ? $user_id : 0);
+        if (! is_int($user_id)) {
+            return;
+        }
+
+        $user = get_userdata($user_id);
 
         if (Role::user_is_auditor($user)) {
             /** @var WP_User $user */
-            self::write('logout', (int) $user->ID, $user->user_login);
+            self::write('logout', $user->ID, $user->user_login);
         }
     }
 
@@ -203,7 +248,8 @@ final class Log
         $pairs = [];
 
         foreach (explode('&', $parts[1]) as $pair) {
-            $key = urldecode(explode('=', $pair, 2)[0]);
+            $equals = strpos($pair, '=');
+            $key = urldecode($equals === false ? $pair : substr($pair, 0, $equals));
             $pairs[] = preg_match(self::SECRET_PARAM, $key) === 1 ? rawurlencode($key).'=REDACTED' : $pair;
         }
 
@@ -226,6 +272,6 @@ final class Log
      */
     public static function reset(): void
     {
-        self::$recorded = false;
+        self::$recorded = null;
     }
 }

@@ -2,6 +2,7 @@
 
 /**
  * WP-CLI: read the Auditor activity log with the same filters as the viewer.
+ * Every subcommand reads; pruning is the scheduled job's alone.
  */
 
 declare(strict_types=1);
@@ -10,7 +11,7 @@ namespace UAMSWeb\AuditorRole\Cli;
 
 use UAMSWeb\AuditorRole\Log;
 use UAMSWeb\AuditorRole\LogQuery;
-use UAMSWeb\AuditorRole\Retention;
+use UAMSWeb\AuditorRole\Report;
 use WP_CLI;
 use WP_User;
 
@@ -21,7 +22,7 @@ defined('ABSPATH') || exit;
 final class LogCommand
 {
     /**
-     * List log rows on the current site, newest first.
+     * List log rows, newest first.
      *
      * ## OPTIONS
      *
@@ -36,6 +37,9 @@ final class LogCommand
      *
      * [--event=<event>]
      * : view, refused, db_refused, login, logout or login_refused.
+     *
+     * [--all-sites]
+     * : Every site of a multisite network, not only the one --url names.
      *
      * [--limit=<number>]
      * : The most rows to print.
@@ -53,21 +57,30 @@ final class LogCommand
      *
      *     wp auditor log list --user=jdoe --from=2026-11-01 --event=refused
      *     wp auditor log list --url=example.org/site-two/ --format=json
+     *     wp auditor log list --all-sites --format=csv
      *
      * @param  list<string>  $args
      * @param  array<string, string>  $assoc
      */
     public function list(array $args, array $assoc): void
     {
-        $this->require_table();
+        $filters = $this->filters($assoc);
+        $limit = max(1, (int) ($assoc['limit'] ?? 100));
+        $rows = [];
 
-        $rows = LogQuery::rows($this->filters($assoc), max(1, (int) ($assoc['limit'] ?? 100)));
+        $this->each_site($assoc, static function () use (&$rows, $filters, $limit): void {
+            array_push($rows, ...LogQuery::rows($filters, $limit));
+        });
 
-        format_items($assoc['format'] ?? 'table', $rows, LogQuery::COLUMNS);
+        // Newest first across sites; within a second, the later site and row
+        // first. The IDs are numeric strings, which <=> compares as numbers.
+        usort($rows, static fn (array $a, array $b): int => [$b['logged_at'], $b['blog_id'], $b['id']] <=> [$a['logged_at'], $a['blog_id'], $a['id']]);
+
+        format_items($assoc['format'] ?? 'table', array_slice($rows, 0, $limit), LogQuery::columns());
     }
 
     /**
-     * Export every matching row on the current site as CSV.
+     * Export every matching row as CSV.
      *
      * ## OPTIONS
      *
@@ -83,6 +96,9 @@ final class LogCommand
      * [--event=<event>]
      * : An event type.
      *
+     * [--all-sites]
+     * : Every site of a multisite network, one header row for all.
+     *
      * [--file=<path>]
      * : Write to this file instead of standard output.
      *
@@ -91,8 +107,7 @@ final class LogCommand
      */
     public function export(array $args, array $assoc): void
     {
-        $this->require_table();
-
+        $filters = $this->filters($assoc);
         $stream = fopen($assoc['file'] ?? 'php://stdout', 'w'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 
         if ($stream === false) {
@@ -101,8 +116,13 @@ final class LogCommand
             return;
         }
 
-        LogQuery::write_csv($stream, $this->filters($assoc));
-        fclose($stream); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+        $header = true;
+
+        // The stream closes when this method returns and its last reference goes.
+        $this->each_site($assoc, static function () use ($stream, $filters, &$header): void {
+            LogQuery::write_csv($stream, $filters, $header);
+            $header = false;
+        });
 
         if (isset($assoc['file'])) {
             WP_CLI::success('Wrote '.$assoc['file']);
@@ -110,12 +130,37 @@ final class LogCommand
     }
 
     /**
-     * Delete rows older than the retention setting on the current site now.
+     * Run a read on the current site, or with --all-sites on each site of the
+     * network whose log table is installed.
+     *
+     * @param  array<string, string>  $assoc
      */
-    public function prune(): void
+    private function each_site(array $assoc, callable $read): void
     {
-        $this->require_table();
-        WP_CLI::success(sprintf('Deleted %d row(s) older than %d days.', Retention::prune(), Retention::days()));
+        if (! isset($assoc['all-sites'])) {
+            $this->require_table();
+            $read();
+
+            return;
+        }
+
+        if (! is_multisite()) {
+            WP_CLI::error('--all-sites needs a multisite network.');
+
+            return;
+        }
+
+        foreach (Report::site_ids() as $blog_id) {
+            switch_to_blog($blog_id);
+
+            try {
+                if (get_option(Log::OPTION) === Log::SCHEMA) {
+                    $read();
+                }
+            } finally {
+                restore_current_blog();
+            }
+        }
     }
 
     /**
@@ -124,18 +169,16 @@ final class LogCommand
      */
     private function filters(array $assoc): array
     {
-        $user_id = 0;
+        $user_id = null;
 
         if (isset($assoc['user'])) {
             $user = is_numeric($assoc['user']) ? get_userdata((int) $assoc['user']) : get_user_by('login', $assoc['user']);
 
-            if (! $user instanceof WP_User) {
+            if ($user instanceof WP_User) {
+                $user_id = $user->ID;
+            } else {
                 WP_CLI::error('No such user: '.$assoc['user']);
-
-                return LogQuery::filters([]);
             }
-
-            $user_id = $user->ID;
         }
 
         foreach (['from', 'to'] as $key) {
@@ -144,15 +187,15 @@ final class LogCommand
             }
         }
 
-        if (isset($assoc['event']) && ! in_array($assoc['event'], Log::EVENTS, true)) {
-            WP_CLI::error('--event must be one of: '.implode(', ', Log::EVENTS));
+        if (isset($assoc['event']) && ! in_array($assoc['event'], Log::events(), true)) {
+            WP_CLI::error('--event must be one of: '.implode(', ', Log::events()));
         }
 
         return LogQuery::filters([
             'user_id' => $user_id,
-            'from' => $assoc['from'] ?? '',
-            'to' => $assoc['to'] ?? '',
-            'event' => $assoc['event'] ?? '',
+            'from' => $assoc['from'] ?? null,
+            'to' => $assoc['to'] ?? null,
+            'event' => $assoc['event'] ?? null,
         ]);
     }
 
