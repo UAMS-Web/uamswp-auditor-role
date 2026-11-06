@@ -9,6 +9,7 @@ Found on the local multisite (WordPress 6.8.8, the uamshealth.com plugin set) by
 | Quick Draft auto-draft (`INSERT posts`) | Dashboard | **Widget removed for the role.** The refused insert made the widget fail with a critical error. |
 | WP Mail SMTP report widget | Dashboard | **Widget removed for the role.** It summarizes the hidden email log. |
 | Transients (`_transient_*`, `_site_transient_*`), such as `_site_transient_update_core` and `_transient_wp_mail_smtp_wp_mail_logging_importer_count` | Most admin screens | **Refused.** Caches only; the page renders and the value is computed again on the next load. |
+| `_asp_media_service_data` (`UPDATE options`) | Every request, Ajax Search Pro, while the plugin file loads | **Refused** since v0.2.2. Found by the screen walk ([`WALK.md`](WALK.md)): it ran before the guard could read the login cookie, so it passed, and every Auditor request rewrote the option's license-check time. The guard now refuses writes while plugins load when a login cookie names an Auditor. |
 | `acf_pro_license`, `acf_pro_license_status` (`UPDATE options`) | Any admin screen, ACF Pro | **Refused.** A license revalidation that changes a live setting. An administrator's request is unaffected. |
 | `genesis_expiring_setting_update*` | Admin screens, Genesis theme | **Refused.** An update-check cache. |
 | User settings (`INSERT usermeta`, such as `wp_user-settings`) | Admin screens | **Refused.** Screen preferences (column and panel state) are not kept for the role. |

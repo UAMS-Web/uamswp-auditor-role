@@ -59,11 +59,13 @@ Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php
 | `languages/` | The `.pot` file. |
 | `tests/Unit/` | Pest 5 and Brain Monkey: no WordPress, no database. |
 | `tests/Integration/` | PHPUnit 9.6 on `wp-phpunit`, with its own `composer.json`. |
+| `tests/Walk/` | The screen walk: every admin screen and AJAX action visited as an Auditor, with writes read from MySQL's binary log. |
 | `scripts/` | `build-zip.mjs` (upload ZIP), `checksums.mjs` (the release checksum list), `check-download-archive.mjs` (keep-list check), `lint-floor.php` (floor lint), `discover-files.php` (the file-only discovery fallback). |
 | `docs/DECISIONS.md` | The decision log. |
 | `docs/DEPLOY.md` | Copy, verify by checksum, first run, removal. |
 | `docs/WRITES-ON-LOAD.md` | Screens that write on load, and the decision for each. |
 | `docs/OPERATIONS.md` | Offboarding an auditor, and the periodic review of the activity log. |
+| `docs/WALK.md` | Running the screen walk on an install, and reading its result. |
 
 ## Develop
 
@@ -95,7 +97,7 @@ An uncovered mutant (no test reaches the line) and an untested one (a test reach
 
 Read a run before trusting it. `0 Mutations for 0 Files created` is a setup failure (a wrong `--path`, no PCOV, no covering test), never a pass, and `scripts/check-mutation-run.php <log>` fails on it. A mutant whose child process crashes is scored as killed, so a run that kills everything deserves a second look: `tests/bootstrap.php` carries the fix for the one such crash found so far, between Pest's mutation stream wrapper and Patchwork. A mutant that times out also reads as killed to Pest but fails the checker, so a test that calls back into the class under test fails on re-entry instead of recursing, and test stand-ins for the database fail on a read nobody queued instead of looping.
 
-CI's `mutate` job mutates the PHP files under `includes/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything.
+The screen walk's classes in `tests/Walk/src/` are held to the same bar. CI's `mutate` job mutates the PHP files under `includes/` and `tests/Walk/src/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything.
 
 Both need a coverage driver. PCOV locally: `pecl install pcov`, or the extension Herd bundles.
 
