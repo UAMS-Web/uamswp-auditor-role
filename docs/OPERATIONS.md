@@ -6,7 +6,7 @@ Commands are WP-CLI, run from the WordPress root. On a multisite network, a comm
 
 ## Offboarding an auditor
 
-Run the steps in this order. The lock comes first so the account can do nothing while the rest happens. The export comes before the removal, because the log's per-auditor filter lists only auditors the log holds rows for and the account record is gone after the removal.
+Run the steps in this order. The lock comes first so the account can do nothing while the rest happens. The export comes before the removal, because `--auditor` looks the account up and the account is gone after the removal. The viewer's **Auditor** filter still lists a removed auditor, from the rows the log holds.
 
 ### 1. Lock the account now
 
@@ -45,10 +45,10 @@ Export before the retention job prunes them (365 days by default; see [Retention
 - **With WP-CLI, every site at once:**
 
   ```bash
-  wp auditor log export --all-sites --file=auditor-log-all.csv   # without --all-sites on a single site
+  wp auditor log export --auditor=<login> --all-sites --file=auditor-log-<login>.csv   # without --all-sites on a single site
   ```
 
-  This file holds every auditor's rows. Keep only the `<login>` rows, by its `user_login` column, before handing it on. The command's `--user` option does not filter: WP-CLI reads `--user` as its own global option, the user the command runs as, so it never reaches the command.
+  The file holds only that auditor's rows. Use `--auditor`, never `--user`: WP-CLI reads `--user` as its own global option, the user the command runs as, so it never reaches the command and the export would hold every auditor's rows. Before v0.2.1 the command named the option `--user`, so on an older version export without it and keep only the `<login>` rows by the `user_login` column.
 
 Store the export with the audit's records, outside this repository.
 
@@ -78,10 +78,11 @@ The log keeps the rows after the account is gone, under the login and user ID th
 
   ```bash
   wp auditor log list --event=refused --from=2026-11-01 --all-sites --format=table
+  wp auditor log list --auditor=<login> --all-sites --format=table
   wp auditor log list --limit=500 --format=csv > recent.csv
   ```
 
-  `--from`, `--to` and `--event` filter as the viewer does. For one auditor, filter the `user_login` column of the output, or use the viewer's **Auditor** filter, for the reason in step 4.
+  `--auditor=<login or ID>`, `--from`, `--to` and `--event` filter as the viewer does.
 - **The export:** the viewer's CSV button, or `wp auditor log export [--all-sites] [--file=<path>]` for every row the filters select. A cell that starts with `=`, `+`, `-`, `@`, a tab or a carriage return is prefixed with `'`, so a spreadsheet shows it as text.
 
 ### What each event means

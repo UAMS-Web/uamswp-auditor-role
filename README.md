@@ -43,7 +43,7 @@ The compensating controls: an activity log per site (`Log`), an administrator-on
 | `wp auditor network-export [--file=]` | Network settings, plugins, themes and sites as JSON, every secret-bearing value masked. |
 | `wp auditor sync-sites` | Adds each login in `UAMSWP_AUDITOR_ROLE_LOGINS` to every site. |
 | `wp auditor refresh-role [--network]` | Rewrites the role. |
-| `wp auditor log list` / `export` | Reads the log or exports it as CSV, with `--user`, `--from`, `--to`, `--event`, and `--all-sites` on a network. Read-only: pruning is the daily scheduled job's (`wp cron event run uamswp_auditor_role_prune` runs it now). |
+| `wp auditor log list` / `export` | Reads the log or exports it as CSV, with `--auditor`, `--from`, `--to`, `--event`, and `--all-sites` on a network. Read-only: pruning is the daily scheduled job's (`wp cron event run uamswp_auditor_role_prune` runs it now). |
 
 Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php <wordpress-path>` reports from files alone.
 

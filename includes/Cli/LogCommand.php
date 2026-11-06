@@ -26,8 +26,9 @@ final class LogCommand
      *
      * ## OPTIONS
      *
-     * [--user=<user>]
-     * : An auditor's login or ID.
+     * [--auditor=<auditor>]
+     * : An auditor's login or ID. Not `--user`, which is WP-CLI's own global
+     * option (the user the command runs as) and never reaches the command.
      *
      * [--from=<date>]
      * : First day, Y-m-d, UTC.
@@ -55,7 +56,7 @@ final class LogCommand
      *
      * ## EXAMPLES
      *
-     *     wp auditor log list --user=jdoe --from=2026-11-01 --event=refused
+     *     wp auditor log list --auditor=jdoe --from=2026-11-01 --event=refused
      *     wp auditor log list --url=example.org/site-two/ --format=json
      *     wp auditor log list --all-sites --format=csv
      *
@@ -84,8 +85,9 @@ final class LogCommand
      *
      * ## OPTIONS
      *
-     * [--user=<user>]
-     * : An auditor's login or ID.
+     * [--auditor=<auditor>]
+     * : An auditor's login or ID. Not `--user`, which is WP-CLI's own global
+     * option (the user the command runs as) and never reaches the command.
      *
      * [--from=<date>]
      * : First day, Y-m-d, UTC.
@@ -171,13 +173,13 @@ final class LogCommand
     {
         $user_id = null;
 
-        if (isset($assoc['user'])) {
-            $user = is_numeric($assoc['user']) ? get_userdata((int) $assoc['user']) : get_user_by('login', $assoc['user']);
+        if (isset($assoc['auditor'])) {
+            $user = is_numeric($assoc['auditor']) ? get_userdata((int) $assoc['auditor']) : get_user_by('login', $assoc['auditor']);
 
             if ($user instanceof WP_User) {
                 $user_id = $user->ID;
             } else {
-                WP_CLI::error('No such user: '.$assoc['user']);
+                WP_CLI::error('No such auditor: '.$assoc['auditor']);
             }
         }
 

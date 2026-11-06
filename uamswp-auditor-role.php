@@ -4,7 +4,7 @@
  * Plugin Name:       UAMS Auditor Role
  * Plugin URI:        https://github.com/UAMS-Web/uamswp-auditor-role
  * Description:       Adds a read-only Auditor role for reviewing a WordPress install without Administrator rights. Deploy as a must-use plugin with the loader stub.
- * Version:           0.2.0
+ * Version:           0.2.1
  * Requires at least: 6.8
  * Requires PHP:      8.2
  * Author:            University of Arkansas for Medical Sciences
@@ -61,7 +61,7 @@ if (defined('UAMSWP_AUDITOR_ROLE_VERSION')) {
     return;
 }
 
-define('UAMSWP_AUDITOR_ROLE_VERSION', '0.2.0');
+define('UAMSWP_AUDITOR_ROLE_VERSION', '0.2.1');
 define('UAMSWP_AUDITOR_ROLE_FILE', __FILE__);
 
 require_once __DIR__.'/includes/autoload.php';
