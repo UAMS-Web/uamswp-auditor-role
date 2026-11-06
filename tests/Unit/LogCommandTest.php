@@ -2,8 +2,8 @@
 
 /**
  * UAMSWeb\AuditorRole\Cli\LogCommand, with WordPress, the database and WP-CLI
- * mocked. The WP-CLI double in LogSupport.php throws from error(), the way the
- * real one exits.
+ * mocked. The WP-CLI double in tests/Support/wp-cli-double.php throws from
+ * error(), the way the real one exits.
  *
  * Mutation-clean under `composer mutate -- --path=includes/Cli/LogCommand.php`,
  * with no equivalent mutants.
@@ -53,7 +53,7 @@ function uamswp_auditor_role_g3_run(LogCommand $command, string $subcommand, arr
     try {
         $command->{$subcommand}([], $assoc);
     } catch (RuntimeException $e) {
-        return str_replace('WP_CLI::error ', '', $e->getMessage());
+        return str_replace('WP_CLI::error: ', '', $e->getMessage());
     }
 
     return null;
@@ -66,7 +66,9 @@ function uamswp_auditor_role_g3_run(LogCommand $command, string $subcommand, arr
  */
 function uamswp_auditor_role_g3_formatted(): array
 {
-    return $GLOBALS['uamswp_auditor_role_g3_formatted'][0];
+    $call = uamswp_auditor_role_g3_formatted_calls()[0];
+
+    return [(string) $call[0], array_values((array) $call[1]), array_values((array) $call[2])];
 }
 
 it('lists rows newest first in the format asked for, with every column', function (string $format): void {
@@ -220,7 +222,7 @@ it('exports the filtered rows as CSV to a file and says where', function (): voi
     expect(uamswp_auditor_role_g3_run(new LogCommand, 'export', ['file' => uamswp_auditor_role_g3_out(), 'event' => 'view']))->toBeNull()
         ->and(file_get_contents(uamswp_auditor_role_g3_out()))->toBe("id,logged_at,user_id,user_login,blog_id,event,method,screen,url,detail\n4,\"2026-11-05 10:00:00\",7,audit,1,view,GET,index.php,/wp-admin/,\n")
         ->and(uamswp_auditor_role_g3_db()->prepared[0])->toContain("AND event = 'view'")
-        ->and($GLOBALS['uamswp_auditor_role_g3_cli'])->toBe([['success', 'Wrote '.uamswp_auditor_role_g3_out()]]);
+        ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([['Wrote '.uamswp_auditor_role_g3_out()]]);
 });
 
 it('exports every site of a network under one header row', function (): void {
@@ -247,7 +249,7 @@ it('says nothing when it exports to standard output', function (): void {
     ob_end_clean();
 
     expect($error)->toBeNull()
-        ->and($GLOBALS['uamswp_auditor_role_g3_cli'])->toBe([]);
+        ->and(UamswpAuditorRoleG4CliLog::$calls)->toBe([]);
 });
 
 it('refuses an output it cannot open, before reading the log', function (): void {

@@ -6,7 +6,7 @@
  *
  * Runs on a single site and, with WP_MULTISITE=1, on a multisite network.
  * WP-CLI is not loaded here, so the command runs against the double in
- * tests/Unit/LogSupport.php, which records what reaches WP-CLI's formatter.
+ * tests/Support/wp-cli-double.php, which records what reaches WP-CLI's formatter.
  */
 
 declare(strict_types=1);
@@ -267,7 +267,7 @@ final class ActivityLogTest extends IntegrationTestCase
 
             (new LogCommand)->list([], ['format' => $format, 'event' => 'refused']);
 
-            [$used, $rows, $fields] = $GLOBALS['uamswp_auditor_role_g3_formatted'][0];
+            [$used, $rows, $fields] = uamswp_auditor_role_g3_formatted_calls()[0];
 
             $this->assertSame($format, $used);
             $this->assertSame(['refused'], array_column($rows, 'event'));
@@ -302,11 +302,11 @@ final class ActivityLogTest extends IntegrationTestCase
         restore_current_blog();
 
         (new LogCommand)->list([], ['format' => 'json']);
-        $this->assertSame([(string) get_current_blog_id()], array_column($GLOBALS['uamswp_auditor_role_g3_formatted'][0][1], 'blog_id'));
+        $this->assertSame([(string) get_current_blog_id()], array_column(uamswp_auditor_role_g3_formatted_calls()[0][1], 'blog_id'));
 
         uamswp_auditor_role_g3_cli_reset();
         (new LogCommand)->list([], ['format' => 'json', 'all-sites' => '1']);
-        $this->assertSame([(string) $blog_id, (string) get_current_blog_id()], array_column($GLOBALS['uamswp_auditor_role_g3_formatted'][0][1], 'blog_id'));
+        $this->assertSame([(string) $blog_id, (string) get_current_blog_id()], array_column(uamswp_auditor_role_g3_formatted_calls()[0][1], 'blog_id'));
     }
 
     public function test_the_command_writes_nothing_to_the_site(): void

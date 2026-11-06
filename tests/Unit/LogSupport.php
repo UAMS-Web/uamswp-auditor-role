@@ -146,46 +146,24 @@ function uamswp_auditor_role_g3_db(): Uamswp_Auditor_Role_G3_Wpdb
     return $wpdb;
 }
 
-/*
- * A WP-CLI double: error() throws, the way the real one exits, and every call
- * is recorded. Defined through eval so the analyzer, which reads WP-CLI's own
- * stubs, never sees a second WP_CLI class.
- */
-if (! class_exists('WP_CLI', false)) {
-    eval(<<<'PHP'
-        final class WP_CLI
-        {
-            public static function error(string $message): never
-            {
-                $GLOBALS['uamswp_auditor_role_g3_cli'][] = ['error', $message];
-
-                throw new RuntimeException('WP_CLI::error '.$message);
-            }
-
-            public static function success(string $message): void
-            {
-                $GLOBALS['uamswp_auditor_role_g3_cli'][] = ['success', $message];
-            }
-        }
-        PHP);
-
-    eval(<<<'PHP'
-        namespace WP_CLI\Utils;
-
-        function format_items(string $format, array $items, array $fields): void
-        {
-            $GLOBALS['uamswp_auditor_role_g3_formatted'][] = [$format, $items, $fields];
-        }
-        PHP);
-}
+require_once __DIR__.'/../Support/wp-cli-double.php';
 
 /**
  * Forget what the WP-CLI double recorded.
  */
 function uamswp_auditor_role_g3_cli_reset(): void
 {
-    $GLOBALS['uamswp_auditor_role_g3_cli'] = [];
-    $GLOBALS['uamswp_auditor_role_g3_formatted'] = [];
+    UamswpAuditorRoleG4CliLog::reset();
+}
+
+/**
+ * What the commands handed WP-CLI's formatter, one entry per call.
+ *
+ * @return list<list<mixed>>
+ */
+function uamswp_auditor_role_g3_formatted_calls(): array
+{
+    return UamswpAuditorRoleG4CliLog::calls('format_items');
 }
 
 /**
