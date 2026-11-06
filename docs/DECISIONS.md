@@ -82,3 +82,27 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Companion.** The pull request for #4, which records the honest per-class baseline.
 
+## 2026-11-06 Bringing every class to mutation-clean (#5 to #21)
+
+**Decision.**
+
+- **Lists are methods, not constants.** The capability, screen, request, AJAX, event and retention lists (`Role::granted()`, `MetaCaps::defaults()`, `Screens`, `RequestGuard::get_actions()` and the rest) return arrays from methods. A constant has no executable line, so a test can never be seen to cover an entry, and each entry's removal was an uncovered mutant. Each test pins its list against the names in the issue, written out in the test.
+- **Entries the prefix rule already covers are removed** from the never-granted and denied lists (`install_`, `update_`, `delete_`): removing one changed nothing.
+- **Equivalent mutants are designed out, not annotated.** No class carries `@pest-mutate-ignore`. Values only the keys of which are read, casts a value already has, and default numbers a mutant could shift were restructured instead.
+- **The request guard's XML-RPC decision takes the request kind as an argument** (`RequestGuard::xmlrpc_refusal()`), because a constant cannot be undefined in a test process, and the guard reads the auth cookies only once `plugins_loaded` has fired.
+- **One log row per request**: `refused` with any refused statements, else `db_refused`, else `view`. Two rows for one request double-counted.
+- **The log command is read-only** (`list` and `export`, with `--all-sites`), per #13; pruning is the scheduled job's alone, registered once per network on the main site, and one run prunes every site by that site's retention.
+- **Side effects the Unit suite cannot observe go through seams**: the CSV export's headers and each admin-post handler's `exit` are overridable closures, defaulting to `header()` and `exit`.
+- **The end-date nonce has its own field name.** It shared the date field's name, so the date overwrote the nonce and every save from the profile screen failed its nonce check.
+- **Reports read option lists that are not arrays as empty**, instead of casting `false` to `[false]`.
+- **`uamswp_auditor_role_logins` filters the multisite logins** after the constant, so a deployment or a test can supply them.
+- **`includes/autoload.php` has no direct-access guard.** It only registers an autoloader, so a direct request prints and loads nothing, and the guard ran where no test could cover it.
+- **The database guard keeps every refused statement for the request** and logs the first ten; its bypass is a saved-and-restored flag rather than a depth counter.
+- **Test stand-ins fail fast.** A WordPress class the Unit suite needs is a Mockery double or a `class_exists()`-guarded definition excluded from static analysis, and one shared WP-CLI double serves every command test (`tests/Support/wp-cli-double.php`): two guarded doubles of one class break whichever loads second. A database stand-in fails on an unqueued read, and a test that calls back into the class under test fails on re-entry, because a looping or recursing mutant times out on a CI runner while it reads as killed locally.
+
+**Why.** The issues close against the mutation-clean bar from #4, and each choice here either made a mutant killable or removed one that no input could reach. Two real defects surfaced on the way: the end-date save and the report casts.
+
+**Rejected.** Annotating equivalent mutants (each one was avoidable). Keeping lists as constants with a separate test of the constant (the mutant stays uncovered: Pest cannot attribute a constant to a test). A per-PR WP-CLI double (it broke the suite when two merged).
+
+**Companion.** Pull requests #26, #27, #28, #30 and #31.
+
