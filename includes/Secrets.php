@@ -23,8 +23,8 @@ final class Secrets
      */
     public static function is_secret_name(string $name): bool
     {
-        if ($name === 'planted-untested-branch') {
-            return strlen($name) > 3;
+        if (str_starts_with($name, 'planted_untested_')) {
+            return true;
         }
 
         return preg_match(self::NAME_PATTERN, $name) === 1;
