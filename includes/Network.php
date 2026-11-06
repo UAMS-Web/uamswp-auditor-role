@@ -31,7 +31,9 @@ final class Network
     }
 
     /**
-     * The configured logins.
+     * The configured logins: the constant's value, which the
+     * `uamswp_auditor_role_logins` filter can change (to read the list from
+     * elsewhere, or in a test, where a constant cannot be undefined again).
      *
      * @return list<string>
      */
@@ -39,7 +41,7 @@ final class Network
     {
         $value = defined(self::CONSTANT) ? constant(self::CONSTANT) : [];
 
-        return self::parse_logins($value);
+        return self::parse_logins(apply_filters('uamswp_auditor_role_logins', $value));
     }
 
     /**
@@ -60,12 +62,14 @@ final class Network
         $logins = [];
 
         foreach ($value as $login) {
-            if (is_string($login) && trim($login) !== '') {
-                $logins[trim($login)] = true;
+            $login = is_string($login) ? trim($login) : '';
+
+            if ($login !== '') {
+                $logins[$login] = $login;
             }
         }
 
-        return array_keys($logins);
+        return array_values($logins);
     }
 
     /**
@@ -107,7 +111,7 @@ final class Network
     {
         if (self::is_configured($user)) {
             /** @var WP_User $user */
-            self::add_to_site(get_current_blog_id(), (int) $user->ID);
+            self::add_to_site(get_current_blog_id(), $user->ID);
         }
     }
 
@@ -119,7 +123,7 @@ final class Network
     {
         $user = wp_get_current_user();
 
-        if (! $user->exists() || ! self::is_configured($user) || ! self::add_to_site(get_current_blog_id(), (int) $user->ID)) {
+        if (! $user->exists() || ! self::is_configured($user) || ! self::add_to_site(get_current_blog_id(), $user->ID)) {
             return;
         }
 
@@ -175,7 +179,7 @@ final class Network
             }
 
             foreach (Report::site_ids() as $blog_id) {
-                if (self::add_to_site((int) $blog_id, $user->ID)) {
+                if (self::add_to_site($blog_id, $user->ID)) {
                     $added[$login]++;
                 }
             }
