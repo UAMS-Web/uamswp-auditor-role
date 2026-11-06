@@ -102,14 +102,31 @@ it('answers no while the cookie is read and while its user is looked up, and yes
     $GLOBALS['pagenow'] = 'admin.php';
     uamswp_auditor_role_g2_actions(false);
     $during = [];
+    $depth = 0;
 
-    Functions\when('wp_validate_auth_cookie')->alias(static function () use (&$during): int {
-        $during[] = Session::is_auditor();
+    // A re-entry fails at once, so a mutant that drops the guard is killed by
+    // this assertion instead of recursing until the mutation run times out.
+    $ask = static function () use (&$during, &$depth): void {
+        if ($depth > 0) {
+            throw new RuntimeException('is_auditor() re-entered the cookie read');
+        }
+
+        $depth++;
+
+        try {
+            $during[] = Session::is_auditor();
+        } finally {
+            $depth--;
+        }
+    };
+
+    Functions\when('wp_validate_auth_cookie')->alias(static function () use ($ask): int {
+        $ask();
 
         return 7;
     });
-    Functions\when('get_userdata')->alias(static function () use (&$during): WP_User {
-        $during[] = Session::is_auditor();
+    Functions\when('get_userdata')->alias(static function () use ($ask): WP_User {
+        $ask();
 
         return uamswp_auditor_role_user_with(7, 'audit', ['auditor']);
     });
