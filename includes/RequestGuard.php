@@ -10,62 +10,97 @@ declare(strict_types=1);
 namespace UAMSWeb\AuditorRole;
 
 use WP_Error;
-use WP_User;
 
 defined('ABSPATH') || exit;
 
 final class RequestGuard
 {
-    /** The request methods that read. */
-    public const READ_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+    /**
+     * The request methods that read.
+     *
+     * The lists here are methods, not constants, so each entry is a line a
+     * test is seen to cover.
+     *
+     * @return list<string>
+     */
+    public static function read_methods(): array
+    {
+        return ['GET', 'HEAD', 'OPTIONS'];
+    }
 
     /**
      * The `action` values an admin GET may carry without a nonce: opening a
      * screen, never acting on one. `-1` is a list table's empty bulk action.
      *
-     * @var list<string>
+     * @return list<string>
      */
-    public const GET_ACTIONS = ['', '-1', 'edit', 'view', 'preview'];
+    public static function get_actions(): array
+    {
+        return ['', '-1', 'edit', 'view', 'preview'];
+    }
 
     /**
      * The scripts where a GET may carry a nonce: core list tables, whose filter
      * form submits its bulk-action nonce with an empty action.
      *
-     * @var list<string>
+     * @return list<string>
      */
-    public const NONCE_LIST_SCRIPTS = ['edit.php', 'upload.php', 'edit-tags.php', 'edit-comments.php', 'plugins.php', 'themes.php'];
+    public static function nonce_list_scripts(): array
+    {
+        return ['edit.php', 'upload.php', 'edit-tags.php', 'edit-comments.php', 'plugins.php', 'themes.php'];
+    }
 
     /**
      * The admin scripts an Auditor never opens, because loading them writes or
      * acts: a new post's auto-draft, a new upload, an update run.
      *
-     * @var list<string>
+     * @return list<string>
      */
-    public const BLOCKED_SCRIPTS = ['admin-post.php', 'post-new.php', 'media-new.php', 'press-this.php', 'update.php', 'upgrade.php', 'async-upload.php', 'plugin-install.php', 'theme-install.php', 'user-new.php'];
+    public static function blocked_scripts(): array
+    {
+        return [
+            'admin-post.php',
+            'post-new.php',
+            'media-new.php',
+            'press-this.php',
+            'update.php',
+            'upgrade.php',
+            'async-upload.php',
+            'plugin-install.php',
+            'theme-install.php',
+            'user-new.php',
+        ];
+    }
 
     /**
      * The `admin-ajax.php` actions verified as read-only in core: each one only
      * queries and prints. Heartbeat's own write callbacks are removed for an
      * Auditor in remove_heartbeat_writes().
      *
-     * @var list<string>
+     * @return list<string>
      */
-    public const AJAX_ACTIONS = [
-        'heartbeat',
-        'fetch-list',
-        'ajax-tag-search',
-        'query-attachments',
-        'get-attachment',
-        'find_posts',
-        'menu-get-metabox',
-        'menu-quick-search',
-        'get-revision-diffs',
-        'dashboard-widgets',
-        'wp-link-ajax',
-    ];
+    public static function ajax_defaults(): array
+    {
+        return [
+            'heartbeat',
+            'fetch-list',
+            'ajax-tag-search',
+            'query-attachments',
+            'get-attachment',
+            'find_posts',
+            'menu-get-metabox',
+            'menu-quick-search',
+            'get-revision-diffs',
+            'dashboard-widgets',
+            'wp-link-ajax',
+        ];
+    }
 
-    /** Whether the request has passed the check as an Auditor session. */
-    private static bool $checked = false;
+    /**
+     * Whether the request has passed the check as an Auditor session. Null
+     * until it has; a literal default would be a line no test can cover.
+     */
+    private static ?bool $checked = null;
 
     /** Why the request was refused, or null. */
     private static ?string $refusal = null;
@@ -88,7 +123,7 @@ final class RequestGuard
      */
     public static function check(): void
     {
-        if (self::$checked || ! Session::is_auditor()) {
+        if (self::$checked === true || ! Session::is_auditor()) {
             return;
         }
 
@@ -118,7 +153,7 @@ final class RequestGuard
     public static function reason(string $script, string $method, array $params, bool $is_admin): ?string
     {
         $action = isset($params['action']) && is_scalar($params['action']) ? (string) $params['action'] : '';
-        $reads = in_array($method, self::READ_METHODS, true);
+        $reads = in_array($method, self::read_methods(), true);
 
         if ($script === 'xmlrpc.php') {
             return 'xmlrpc';
@@ -136,7 +171,7 @@ final class RequestGuard
             return in_array($action, self::ajax_actions(), true) ? null : 'ajax:'.$action;
         }
 
-        if (isset($params['_method']) && is_scalar($params['_method']) && ! in_array(strtoupper((string) $params['_method']), self::READ_METHODS, true)) {
+        if (isset($params['_method']) && is_scalar($params['_method']) && ! in_array(strtoupper((string) $params['_method']), self::read_methods(), true)) {
             return 'method-override';
         }
 
@@ -152,7 +187,7 @@ final class RequestGuard
             return 'network-admin';
         }
 
-        if (in_array($script, self::BLOCKED_SCRIPTS, true)) {
+        if (in_array($script, self::blocked_scripts(), true)) {
             return 'script:'.$script;
         }
 
@@ -171,8 +206,9 @@ final class RequestGuard
      */
     public static function get_reason(string $script, array $params): ?string
     {
-        $allowed = apply_filters('uamswp_auditor_role_get_actions', self::GET_ACTIONS, $script, $params);
-        $allowed = is_array($allowed) ? $allowed : self::GET_ACTIONS;
+        $defaults = self::get_actions();
+        $allowed = apply_filters('uamswp_auditor_role_get_actions', $defaults, $script, $params);
+        $allowed = is_array($allowed) ? $allowed : $defaults;
 
         $actions = [];
 
@@ -190,7 +226,7 @@ final class RequestGuard
                 continue;
             }
 
-            $is_list_filter = in_array($script, self::NONCE_LIST_SCRIPTS, true)
+            $is_list_filter = in_array($script, self::nonce_list_scripts(), true)
                 && array_diff($actions, ['', '-1']) === [];
 
             if (! $is_list_filter) {
@@ -208,9 +244,10 @@ final class RequestGuard
      */
     public static function ajax_actions(): array
     {
-        $actions = apply_filters('uamswp_auditor_role_ajax_actions', self::AJAX_ACTIONS);
+        $defaults = self::ajax_defaults();
+        $actions = apply_filters('uamswp_auditor_role_ajax_actions', $defaults);
 
-        return is_array($actions) ? array_values(array_filter($actions, is_string(...))) : self::AJAX_ACTIONS;
+        return is_array($actions) ? array_values(array_filter($actions, is_string(...))) : $defaults;
     }
 
     /**
@@ -225,7 +262,7 @@ final class RequestGuard
             return $result;
         }
 
-        if (! Session::is_auditor() || in_array($request->get_method(), self::READ_METHODS, true)) {
+        if (! Session::is_auditor() || in_array($request->get_method(), self::read_methods(), true)) {
             return $result;
         }
 
@@ -243,7 +280,17 @@ final class RequestGuard
      */
     public static function refuse_xmlrpc(mixed $user): mixed
     {
-        if (defined('XMLRPC_REQUEST') && $user instanceof WP_User && Role::user_is_auditor($user)) {
+        return self::xmlrpc_refusal($user, defined('XMLRPC_REQUEST'));
+    }
+
+    /**
+     * The sign-in result for a user: an error for an Auditor over XML-RPC, the
+     * user otherwise. Separate from refuse_xmlrpc() so both answers can be
+     * tested in one process, where a constant cannot be undefined.
+     */
+    public static function xmlrpc_refusal(mixed $user, bool $is_xmlrpc): mixed
+    {
+        if ($is_xmlrpc && Role::user_is_auditor($user)) {
             return new WP_Error('uamswp_auditor_role_xmlrpc', __('XML-RPC is turned off for Auditor accounts.', 'uamswp-auditor-role'));
         }
 
@@ -278,7 +325,7 @@ final class RequestGuard
      */
     public static function reset(): void
     {
-        self::$checked = false;
+        self::$checked = null;
         self::$refusal = null;
     }
 
@@ -320,7 +367,11 @@ final class RequestGuard
             return true;
         }
 
-        $uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        if (! isset($_SERVER['REQUEST_URI'])) {
+            return false;
+        }
+
+        $uri = sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI']));
 
         return str_contains($uri, '/'.rest_get_url_prefix().'/');
     }
