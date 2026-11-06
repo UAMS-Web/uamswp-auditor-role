@@ -106,3 +106,20 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Companion.** Pull requests #26, #27, #28, #30 and #31.
 
+## 2026-11-06 The screen walk, and refusing writes while plugins load (#19)
+
+**Decision.**
+
+- **The walk reads writes from MySQL's binary log**, outside WordPress, rather than from the guard's own log or from table checksums. Every committed change by any connection is in it, so a write that passes the guard by any path shows, and it costs a position read per request where checksums of a 1.8 GB database would not finish. It requires the log on in row format, and the walk checks that and proves itself on a probe write before trusting an empty window.
+- **Every menu slug on every site, and each AJAX action once.** A screen renders its own site's data, so it is visited on each site; an action is the same code on every site that registers it, so it is visited once. On the local network that is 3,994 requests rather than about 14,600.
+- **WP-Cron is off on a walked install.** A cron run a visit sets off writes as an anonymous request, and the walk cannot tell it from the visit's own write.
+- **While regular plugins load, a login cookie that names an Auditor refuses writes, unvalidated.** The functions that validate a cookie are pluggable and load after the plugins, so until then the guard could not tell an Auditor's request, and a plugin that wrote as it loaded passed. The first walk found Ajax Search Pro doing so on every request. The cookie's HMAC is not checked: a forged cookie that names an Auditor can only refuse its own request's writes. That answer is held apart from the validated one, which it never stands in for. Before, the "not an Auditor" answer the early write caused was held for the whole request, so the `plugins_loaded` request check also skipped and writes before `init` passed.
+- **The walk's classes are held to the mutation-clean bar**, in `tests/Walk/src/`, which joins the coverage source, and the test bootstrap swaps a mutant in for any class Composer maps.
+- **CI walks the public plugin set in `tests/Walk/plugins.txt`** on the WordPress version the integration suite runs, so a plugin that needs a newer core (Contact Form 7 needs 7.1) is left out, and walks again with a planted write that must fail the run.
+
+**Why.** #19 asks for evidence that the guard holds against the real plugin set, and evidence needs an instrument the guard does not control.
+
+**Rejected.** Checksumming every table around each request (minutes per request on the local database). Reading only the guard's refusals (it cannot see what it let through). Validating the cookie early by loading the pluggable functions ahead of plugins (a plugin may replace them). Visiting each AJAX action on every site (four times the requests for the same code).
+
+**Companion.** `docs/WALK.md`, `docs/WRITES-ON-LOAD.md`, and the pull request for #19.
+

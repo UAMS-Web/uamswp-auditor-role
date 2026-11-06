@@ -103,7 +103,7 @@ The log keeps the rows after the account is gone, under the login and user ID th
 - **`login_refused` rows.** An expired account still trying to sign in.
 - **`login` rows from unexpected accounts or at unexpected times**, such as an account whose audit has ended but whose end date was never set.
 - **Activity on a site the audit does not cover**, on a multisite network.
-- **Gaps.** Audit work that leaves no `view` rows means the work happened somewhere else, or the plugin was not loaded. `wp mu-plugin list` should show the loader.
+- **Gaps.** Audit work that leaves no `view` rows means the work happened somewhere else, or the plugin was not loaded. `wp plugin list --status=must-use` should list `uamswp-auditor-role-loader`.
 
 ### Cadence
 

@@ -9,9 +9,10 @@
  */
 
 declare(strict_types=1);
+use Composer\Autoload\ClassLoader;
 use Pest\Mutate\Support\StreamWrapper;
 
-require_once __DIR__.'/../vendor/autoload.php';
+$uamswp_auditor_role_composer = require __DIR__.'/../vendor/autoload.php';
 
 /*
  * A mutation run (`composer mutate`) starts one child process per mutant, with
@@ -64,15 +65,17 @@ $uamswp_auditor_role_includes = (string) realpath(__DIR__.'/../includes');
 if ($uamswp_auditor_role_is_mutant) {
     $uamswp_auditor_role_original = (string) realpath((string) $uamswp_auditor_role_original);
 
-    // Prepended, so the plugin's class whose file is mutated comes from the copy.
-    spl_autoload_register(static function (string $class) use ($uamswp_auditor_role_includes, $uamswp_auditor_role_original, $uamswp_auditor_role_mutant): void {
+    // Prepended, so the class whose file is mutated comes from the copy: a
+    // plugin class from the plugin's own class path, or any class Composer
+    // maps (the walk's classes under tests/Walk/src) from Composer's.
+    spl_autoload_register(static function (string $class) use ($uamswp_auditor_role_includes, $uamswp_auditor_role_original, $uamswp_auditor_role_mutant, $uamswp_auditor_role_composer): void {
         $prefix = 'UAMSWeb\\AuditorRole\\';
+        $mapped = $uamswp_auditor_role_composer instanceof ClassLoader ? $uamswp_auditor_role_composer->findFile($class) : false;
+        $file = is_string($mapped) ? realpath($mapped) : false;
 
-        if (! str_starts_with($class, $prefix)) {
-            return;
+        if ($file === false && str_starts_with($class, $prefix)) {
+            $file = realpath($uamswp_auditor_role_includes.'/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php');
         }
-
-        $file = realpath($uamswp_auditor_role_includes.'/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php');
 
         if ($file === $uamswp_auditor_role_original) {
             require_once $uamswp_auditor_role_mutant;

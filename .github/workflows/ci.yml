@@ -228,7 +228,7 @@ jobs:
         with:
           coverage: pcov
 
-      # Mutate only the PHP files under includes/ that this change adds, changes or renames.
+      # Mutate only the PHP files under includes/ and tests/Walk/src/ that this change adds, changes or renames.
       # A change that touches none passes with the reason printed. A manual run mutates
       # everything `composer mutate` covers.
       - name: Select the files to mutate
@@ -247,7 +247,7 @@ jobs:
           fi
           # NUL-separated, so a name git would quote (non-ASCII, a tab) is read as it is.
           list=$(mktemp)
-          git diff -z --name-only --diff-filter=AMR HEAD^1 HEAD -- includes > "$list"
+          git diff -z --name-only --diff-filter=AMR HEAD^1 HEAD -- includes tests/Walk/src > "$list"
           files=()
           while IFS= read -r -d '' f; do
             [[ "$f" == *.php ]] || continue
@@ -259,7 +259,7 @@ jobs:
           done < "$list"
           if [ "${#files[@]}" -eq 0 ]; then
             echo "mode=none" >> "$GITHUB_OUTPUT"
-            echo "No PHP file under includes/ is added or changed, so there is nothing to mutate."
+            echo "No PHP file under includes/ or tests/Walk/src/ is added or changed, so there is nothing to mutate."
             exit 0
           fi
           echo "Mutating ${#files[@]} changed file(s):"
@@ -296,10 +296,106 @@ jobs:
             php scripts/check-mutation-run.php mutate.log
           fi
 
+  walk:
+    name: Screen walk (multisite)
+    needs: [rector, phpstan]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    defaults:
+      run:
+        shell: bash
+    env:
+      WP_ROOT: /tmp/walk-wordpress
+      WP_VERSION: '7.0.8'
+      WALK_ADMIN_PASSWORD: walk-admin-${{ github.run_id }}
+      WALK_PASSWORD: walk-auditor-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - name: Install WP-CLI
+        run: |
+          curl -fsSL -o /tmp/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x /tmp/wp
+          sudo mv /tmp/wp /usr/local/bin/wp
+
+      # A subdirectory multisite with two sites, WP-Cron off (a cron run a visit
+      # starts writes as an anonymous request and would read as that visit's
+      # write), the public plugin set network-active, and this plugin through
+      # its must-use stub.
+      - name: Build the multisite
+        run: |
+          mysql -h 127.0.0.1 -u root -e 'CREATE DATABASE walk'
+          mkdir -p "$WP_ROOT" && cd "$WP_ROOT"
+          wp core download --version="$WP_VERSION" --quiet
+          wp config create --dbname=walk --dbuser=root --dbpass= --dbhost=127.0.0.1 --skip-check --extra-php <<'PHP'
+          define('DISABLE_WP_CRON', true);
+          PHP
+          wp core multisite-install --url=http://localhost --title=Walk --admin_user=admin --admin_password="$WALK_ADMIN_PASSWORD" --admin_email=admin@example.test --skip-email
+          wp site create --slug=two --title=Two --quiet
+          # One at a time, so a plugin that will not install is named.
+          for plugin in $(grep -v '^#' "$GITHUB_WORKSPACE/tests/Walk/plugins.txt"); do
+            wp plugin install "$plugin" --activate-network || { echo "::error::Could not install $plugin"; exit 1; }
+          done
+          mkdir -p wp-content/mu-plugins
+          git -C "$GITHUB_WORKSPACE" archive --worktree-attributes --format=tar --prefix=uamswp-auditor-role/ HEAD | tar -x -C wp-content/mu-plugins
+          cp wp-content/mu-plugins/uamswp-auditor-role/loader/uamswp-auditor-role-loader.php wp-content/mu-plugins/
+          wp user create walker walker@example.test --role=auditor --user_pass="$WALK_PASSWORD" --quiet
+          wp --exec="define('UAMSWP_AUDITOR_ROLE_LOGINS', 'walker');" auditor sync-sites
+          for url in $(wp site list --field=url); do wp option get blogname --url="$url" > /dev/null; done
+          wp plugin list --status=must-use --fields=name,status
+
+      - name: Serve it
+        run: |
+          sudo PHP_CLI_SERVER_WORKERS=4 "$(command -v php)" -S 127.0.0.1:80 -t "$WP_ROOT" "$GITHUB_WORKSPACE/tests/Walk/router.php" > /tmp/walk-server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS -o /dev/null http://localhost/wp-login.php && break; sleep 1; done
+          curl -fsS -o /dev/null -w 'wp-login.php: %{http_code}\n' http://localhost/wp-login.php
+          curl -sS -o /dev/null -w 'two/wp-admin/: %{http_code}\n' http://localhost/two/wp-admin/
+
+      - name: Walk every screen and AJAX action as an Auditor
+        run: |
+          php tests/Walk/walk.php --wp-root="$WP_ROOT" --admin=admin --auditor=walker --password-env=WALK_PASSWORD \
+            --db-host=127.0.0.1 --db-user=root --db-name=walk --report=walk.md --settle-ms=100
+          cat walk.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The control: a must-use plugin that writes through its own connection
+      # on every admin request by an Auditor. The walk must fail and name it.
+      - name: A planted write fails the walk
+        run: |
+          cp tests/Walk/fixtures/planted-write.php "$WP_ROOT/wp-content/mu-plugins/"
+          set +e
+          php tests/Walk/walk.php --wp-root="$WP_ROOT" --admin=admin --auditor=walker --password-env=WALK_PASSWORD \
+            --db-host=127.0.0.1 --db-user=root --db-name=walk --report=planted.md --settle-ms=100 --limit=5
+          status=$?
+          set -e
+          rm "$WP_ROOT/wp-content/mu-plugins/planted-write.php"
+          cat planted.md
+          if [ "$status" -ne 1 ] || ! grep -q '_options` | row |' planted.md; then
+            echo "::error::The planted write did not fail the walk (exit $status)."
+            exit 1
+          fi
+          echo "The walk failed on the planted write, as it must."
+
+      - name: Server log
+        if: always()
+        run: tail -n 50 /tmp/walk-server.log || true
+
   # The one check a ruleset requires from this workflow.
   ci:
     name: CI
-    needs: [composer-validate, floor-lint, download-archive, synced-files, no-emoji, aggregate-needs, pint, phpcs, rector, phpstan, unit, integration, mutate]
+    needs: [composer-validate, floor-lint, download-archive, synced-files, no-emoji, aggregate-needs, pint, phpcs, rector, phpstan, unit, integration, mutate, walk]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

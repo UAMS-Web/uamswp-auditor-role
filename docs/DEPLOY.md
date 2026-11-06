@@ -33,7 +33,7 @@ Every line must read `OK`. A changed or missing file prints `FAILED` and the com
 Then confirm the plugin loaded:
 
 ```bash
-wp mu-plugin list
+wp plugin list --status=must-use   # lists uamswp-auditor-role-loader
 wp role list | grep auditor        # appears after the first request on each site
 ```
 
