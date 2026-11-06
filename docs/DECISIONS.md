@@ -65,3 +65,20 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Rejected.** Allowing transients by default (the issue asks for refusal and a per-case decision). Granting the Plugins screen past the network setting (wider than a site administrator). An allowlist of usermeta keys for the session token (a window another write could pass through).
 
 **Companion.** `docs/WRITES-ON-LOAD.md`, `docs/DEPLOY.md`, and the pull request for #3.
+
+## 2026-11-06 Mutation testing in the Unit suite and CI (#4)
+
+**Decision.**
+
+- **`composer mutate`** runs Pest's `--mutate --everything --parallel --min=100 --path=includes`, so it exits non-zero on any mutant not killed. `--everything` because the tests do not declare `covers()`. A later `--path` scopes it to one class.
+- **A child-process fix in `tests/bootstrap.php`.** Pest swaps a mutant in through a `file://` stream wrapper, and Patchwork (Brain Monkey) wraps the same protocol. In a mutant's child the two collided on a directory call and the child fatal-errored before any test ran, and Pest scores a failed child as killed. Every mutant read as killed whatever the tests asserted. In a child, the bootstrap now turns Pest's wrapper off before Patchwork loads and loads the mutated copy through the plugin's class path. A planted mutant no test can see now survives, and a planted mutant a test asserts against is killed.
+- **The CI job mutates changed files only, on a push to `main` as well as on a pull request.** The shared template mutates everything on a push. Until each class reaches the bar under its own issue, that would hold `main` red for code no pull request touched. A manual run still mutates everything.
+- **The run is read by `scripts/check-mutation-run.php`**, not by Pest's exit status alone: it fails on zero mutants and on any untested or uncovered mutant. The `pest-testing` skill's checker it replaces is not synced to this repository.
+- **Linux only**, like every other job here.
+
+**Why.** The later issues close against a mutation-clean bar, and a bar is only as good as the instrument that measures it. The collision was found because a mutant planted to be unkillable was reported killed.
+
+**Rejected.** Mutating everything on a push to `main` (red on code no change touched). Trusting Pest's exit status (passes on zero mutants in some configurations). Replacing Brain Monkey to avoid Patchwork (a rewrite of every unit test for a bootstrap-sized problem).
+
+**Companion.** The pull request for #4, which records the honest per-class baseline.
+

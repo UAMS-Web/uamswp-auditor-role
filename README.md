@@ -69,6 +69,9 @@ Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php
 composer install
 composer setup:integration            # the integration suite's own Composer setup
 composer test:unit                    # Pest
+composer test:coverage                # Pest with line coverage of includes/ (needs PCOV)
+composer mutate                       # mutation-test includes/ (needs PCOV); fails on any mutant not killed
+composer mutate -- --path=includes/Role.php   # one class
 composer test:integration             # PHPUnit 9.6 against WordPress and a database
 composer stan                         # PHPStan
 composer test:pint                    # formatting (composer fix:pint to apply)
@@ -77,6 +80,22 @@ composer test:refactor                # Rector, dry run
 composer check:archive                # the download holds only what the plugin runs
 LINT_PHP=/path/to/php8.2 composer lint:floor   # parse shipped files on the floor PHP
 ```
+
+### The test bar
+
+Code under `includes/` is held to **mutation-clean**, not to a line-coverage percentage. A class meets the bar when `composer mutate -- --path=<file>` leaves no unexplained mutant:
+
+- **killed:** a unit test fails when the mutant is applied;
+- **deleted:** the mutant showed dead code, and it was removed;
+- **equivalent:** no input can tell the mutant apart, so the line carries `@pest-mutate-ignore` and the covering test's docblock says which mutant survives and why.
+
+An uncovered mutant (no test reaches the line) and an untested one (a test reaches it but nothing fails) both fail the bar. Line coverage only shows what a test touched; `composer test:coverage` is for finding where to start.
+
+Read a run before trusting it. `0 Mutations for 0 Files created` is a setup failure (a wrong `--path`, no PCOV, no covering test), never a pass, and `scripts/check-mutation-run.php <log>` fails on it. A mutant whose child process crashes is scored as killed, so a run that kills everything deserves a second look: `tests/bootstrap.php` carries the fix for the one such crash found so far, between Pest's mutation stream wrapper and Patchwork.
+
+CI's `mutate` job mutates the PHP files under `includes/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything.
+
+Both need a coverage driver. PCOV locally: `pecl install pcov`, or the extension Herd bundles.
 
 ### The integration suite
 

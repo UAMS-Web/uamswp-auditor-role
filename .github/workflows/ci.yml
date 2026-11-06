@@ -12,10 +12,13 @@ name: CI
 #
 # Shared with the other UAMS-Web repositories (the code-quality skill's ci.yml template):
 # `synced-files`, `no-emoji`, `aggregate-needs`, the lint and test chain, and `CI`. The
-# plugin's own jobs are `floor-lint`, `download-archive` and `integration`. The template's
-# `mutate`, `mutate-ignore` and `pest` jobs are left out: this repository has no
-# `mutate` Composer script, no pest-testing skill and no skip baseline, and its Pest suite
-# runs in the `unit` job.
+# plugin's own jobs are `floor-lint`, `download-archive`, `integration` and `mutate`. The
+# template's `mutate-ignore` and `pest` jobs are left out: this repository has no
+# pest-testing skill and no skip baseline, and its Pest suite runs in the `unit` job.
+# `mutate` follows the template's job, with two differences recorded in docs/DECISIONS.md:
+# it reads the run with scripts/check-mutation-run.php (the pest-testing skill's checker
+# is not synced here), and a push to `main` mutates the files that push changed rather
+# than everything, so `main` is held to the bar each pull request was held to.
 
 on:
   pull_request:
@@ -204,10 +207,99 @@ jobs:
           curl -fsSL "https://wordpress.org/wordpress-${WP_VERSION}.tar.gz" | tar -xz -C "$WP_TESTS_ABSPATH" --strip-components=1
       - run: composer test:integration
 
+  mutate:
+    name: Mutation score (changed files, with PCOV)
+    needs: [rector, phpstan]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # An explicit `bash` runs each step with `-eo pipefail`, so the run step's `| tee`
+    # reports Pest's status, not tee's.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Depth 2: on a pull request the checkout is GitHub's merge commit, whose first parent
+      # is the base branch; on a push it is the pushed commit, whose first parent is the one
+      # before it.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - uses: ./.github/actions/setup
+        with:
+          coverage: pcov
+
+      # Mutate only the PHP files under includes/ that this change adds, changes or renames.
+      # A change that touches none passes with the reason printed. A manual run mutates
+      # everything `composer mutate` covers.
+      - name: Select the files to mutate
+        id: select
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            echo "A manual run: mutating everything composer mutate covers."
+            exit 0
+          fi
+          if ! git rev-parse --verify --quiet HEAD^1 > /dev/null; then
+            echo "::error::HEAD has no parent in this checkout, so the change cannot be read."
+            exit 1
+          fi
+          # NUL-separated, so a name git would quote (non-ASCII, a tab) is read as it is.
+          list=$(mktemp)
+          git diff -z --name-only --diff-filter=AMR HEAD^1 HEAD -- includes > "$list"
+          files=()
+          while IFS= read -r -d '' f; do
+            [[ "$f" == *.php ]] || continue
+            if [[ "$f" == *,* || "$f" == *$'\n'* ]]; then
+              echo "::error::A changed path holds a comma or a newline, which --path cannot carry: $f"
+              exit 1
+            fi
+            files+=("$f")
+          done < "$list"
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            echo "No PHP file under includes/ is added or changed, so there is nothing to mutate."
+            exit 0
+          fi
+          echo "Mutating ${#files[@]} changed file(s):"
+          printf '%s\n' "${files[@]}"
+          echo "mode=changed" >> "$GITHUB_OUTPUT"
+          echo "paths=$(IFS=,; echo "${files[*]}")" >> "$GITHUB_OUTPUT"
+
+      # `composer mutate` passes --min=100, so Pest fails the step on any mutant not killed.
+      # The later --path replaces the script's own. The log is kept for the check below.
+      - name: Run mutation testing
+        if: steps.select.outputs.mode != 'none'
+        env:
+          MODE: ${{ steps.select.outputs.mode }}
+          PATHS: ${{ steps.select.outputs.paths }}
+        run: |
+          if [ "$MODE" = "changed" ]; then
+            composer mutate -- --ignore-min-score-on-zero-mutations --path="$PATHS" 2>&1 | tee mutate.log
+          else
+            composer mutate 2>&1 | tee mutate.log
+          fi
+
+      # Reads the log, not the exit status: fails on zero mutants and on any untested or
+      # uncovered mutant. Runs even when the step above failed, so the log's own account is
+      # printed. Changed files that produce no mutants with PCOV loaded hold no code a
+      # mutator changes, which is a pass; zero mutants on a full run still fails.
+      - name: Check the mutation run
+        if: always() && steps.select.outputs.mode != 'none'
+        env:
+          MODE: ${{ steps.select.outputs.mode }}
+        run: |
+          if [ "$MODE" = "changed" ] && php -r 'exit(extension_loaded("pcov") && ini_get("pcov.enabled") ? 0 : 1);'; then
+            php scripts/check-mutation-run.php mutate.log --allow-zero
+          else
+            php scripts/check-mutation-run.php mutate.log
+          fi
+
   # The one check a ruleset requires from this workflow.
   ci:
     name: CI
-    needs: [composer-validate, floor-lint, download-archive, synced-files, no-emoji, aggregate-needs, pint, phpcs, rector, phpstan, unit, integration]
+    needs: [composer-validate, floor-lint, download-archive, synced-files, no-emoji, aggregate-needs, pint, phpcs, rector, phpstan, unit, integration, mutate]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
