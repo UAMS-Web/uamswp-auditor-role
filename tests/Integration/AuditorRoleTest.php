@@ -62,8 +62,8 @@ final class AuditorRoleTest extends IntegrationTestCase
         $role = get_role(Role::NAME);
 
         $this->assertNotNull($role);
-        $this->assertSame(Role::GRANTED, array_keys(array_filter($role->capabilities)));
-        $this->assertSame([], array_intersect(array_keys($role->capabilities), Role::NEVER_GRANTED));
+        $this->assertSame(Role::granted(), array_keys(array_filter($role->capabilities)));
+        $this->assertSame([], array_intersect(array_keys($role->capabilities), Role::never_granted()));
     }
 
     public function test_raising_the_stamp_rewrites_the_role_once(): void
