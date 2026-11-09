@@ -111,7 +111,7 @@ It boots WordPress through `wp-phpunit` and **drops and rebuilds every table in 
 
 ## Public by default, and the switch for a private plugin
 
-A plugin made from the template is **public** and runs its checks in GitHub Actions (`.github/workflows/ci.yml`).
+A plugin made from the template is **public** and runs its checks in GitHub Actions (`.github/workflows/ci.yml`), which calls the shared chain in `UAMS-Web/uams-ci-workflows` and keeps `integration`, `mutate` and `walk` as plain jobs beside the call.
 
 To make a plugin **private**: make the repository private, delete `.github/workflows/ci.yml`, and run the same checks with the shared local CI runner instead (the `local-ci` skill and its `local-ci.json` template, delivered by the sync). Private repositories pay for Actions minutes, so the local runner is the default there. Keep `release.yml`; it only runs when a release is published.
 
