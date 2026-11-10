@@ -33,6 +33,7 @@ final class Plugin
         LogViewer::boot();
         Network::boot();
         AdminBar::boot();
+        ShortPixel::boot();
         BetterImageSizes::boot();
 
         add_action('init', [Role::class, 'maybe_register'], 0);
