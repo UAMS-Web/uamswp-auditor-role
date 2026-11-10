@@ -26,9 +26,10 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'page:gf_entries', 'page:gf_settings', 'page:gf_export', 'page:gf_system_status', 'page:formidable-entries', 'page:formidable-settings', 'page:formidable-import',
     'edit.php?post_type=nf_sub', 'page:nf-submissions', 'page:nf-settings', 'page:nf-import-export', 'page:nf-system-status',
     'page:transients-manager', 'page:acfe-options',
-    'page:acf-settings-updates', 'page:seopress-license', 'page:seopress-google-analytics', 'page:relevanssi-premium/relevanssi.php', 'page:facetwp', 'page:asp_updates_help', 'page:geot-settings',
+    'page:acf-settings-updates', 'page:seopress-license', 'page:seopress-google-analytics', 'page:relevanssi-premium/relevanssi.php', 'page:facetwp', 'page:asp_updates_help', 'page:geot-settings', 'page:wp-shortpixel-settings',
     'page:whl_settings',
     'page:uamswp-gmb-export', 'page:asp_export_import', 'page:tablepress_export',
+    'page:wp-short-pixel-bulk',
 ];
 
 /** The dashboard widgets docs/WRITES-ON-LOAD.md removes for the role. */
