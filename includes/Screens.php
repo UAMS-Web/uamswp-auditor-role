@@ -77,6 +77,8 @@ final class Screens
             'page:uamswp-gmb-export',
             'page:asp_export_import',
             'page:tablepress_export',
+            // Image maintenance: Better Image Sizes' settings and cached-image tools.
+            'page:better-image-sizes/better-image-sizes.php',
         ];
     }
 

@@ -29,6 +29,7 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'page:acf-settings-updates', 'page:seopress-license', 'page:seopress-google-analytics', 'page:relevanssi-premium/relevanssi.php', 'page:facetwp', 'page:asp_updates_help', 'page:geot-settings',
     'page:whl_settings',
     'page:uamswp-gmb-export', 'page:asp_export_import', 'page:tablepress_export',
+    'page:better-image-sizes/better-image-sizes.php',
 ];
 
 /** The dashboard widgets docs/WRITES-ON-LOAD.md removes for the role. */
