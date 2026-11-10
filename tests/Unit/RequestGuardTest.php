@@ -109,6 +109,8 @@ it('decides each request', function (string $script, string $method, array $para
     'admin PUT' => ['post.php', 'PUT', [], true, 'method:PUT'],
     'options.php read' => ['options.php', 'GET', [], true, 'hidden:options.php'],
     'options.php save' => ['options.php', 'POST', [], true, 'method:POST'],
+    'connectors read' => ['options-connectors.php', 'GET', [], true, 'hidden:options-connectors.php'],
+    'better image sizes delete link' => ['tools.php', 'GET', ['page' => 'better-image-sizes/better-image-sizes.php', 'delete-bis-image' => '', 'ids' => '5', 'bis_nonce' => 'n'], true, 'hidden:tools.php?page=better-image-sizes/better-image-sizes.php'],
     'regenerate thumbnails screen' => ['tools.php', 'GET', ['page' => 'regenerate-thumbnails'], true, 'hidden:tools.php?page=regenerate-thumbnails'],
     'admin-post' => ['admin-post.php', 'GET', ['action' => 'x'], true, 'script:admin-post.php'],
     'new post auto-draft' => ['post-new.php', 'GET', [], true, 'script:post-new.php'],

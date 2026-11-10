@@ -14,6 +14,7 @@ Found on the local multisite (WordPress 6.8.8, the uamshealth.com plugin set) by
 | `genesis_expiring_setting_update*` | Admin screens, Genesis theme | **Refused.** An update-check cache. |
 | User settings (`INSERT usermeta`, such as `wp_user-settings`) | Admin screens | **Refused.** Screen preferences (column and panel state) are not kept for the role. |
 | Post lock (`_edit_lock`), autosave | Post editor (read from core's code; the role cannot open another user's post) | **Refused, and taken out of Heartbeat** for the role, so the allowlisted action stays a read. |
+| ShortPixel processor (`admin-ajax.php?action=shortpixel_image_processing`) | Media and editor screens, ShortPixel Image Optimizer, every few seconds | **Processor turned off for the role** through `shortpixel/processorjs/disable`, and the settings and Bulk screens hidden. The refused request showed as a ShortPixel fatal error. |
 | Session token (`session_tokens` usermeta) | Sign-out, session end | **Allowed.** The plugin's session manager writes it past the guard. |
 | Activity log rows | Every Auditor request | **Allowed.** The plugin's own write. |
 | Adding a configured login to a site | Multisite, on visit or creation | **Allowed.** The plugin's own write. |
