@@ -70,7 +70,11 @@ final class Previews
             return false;
         }
 
-        $method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD']))) : '';
+        if (! isset($_SERVER['REQUEST_METHOD'])) {
+            return false;
+        }
+
+        $method = strtoupper(sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'])));
 
         return $method === 'GET' || $method === 'HEAD';
     }
