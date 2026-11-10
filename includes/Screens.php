@@ -77,6 +77,15 @@ final class Screens
             'page:uamswp-gmb-export',
             'page:asp_export_import',
             'page:tablepress_export',
+            // ACF's data model: field groups, post types, taxonomies, options pages, tools,
+            // and ACF Extended's settings and field group categories.
+            'edit.php?post_type=acf-field-group',
+            'edit.php?post_type=acf-post-type',
+            'edit.php?post_type=acf-taxonomy',
+            'edit.php?post_type=acf-ui-options-page',
+            'edit-tags.php?taxonomy=acf-field-group-category',
+            'page:acf-tools',
+            'page:acfe-settings',
         ];
     }
 

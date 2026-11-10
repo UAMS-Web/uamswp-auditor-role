@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use UAMSWeb\AuditorRole\Account;
+use UAMSWeb\AuditorRole\Acf;
 use UAMSWeb\AuditorRole\AdminBar;
 use UAMSWeb\AuditorRole\Cli\AuditorCommand;
 use UAMSWeb\AuditorRole\Cli\LogCommand;
@@ -62,6 +63,8 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_action('admin_menu', [LogViewer::class, 'register_page']))->toBe(10)
         ->and(has_action('wp_initialize_site', [Network::class, 'on_new_site']))->toBe(100)
         ->and(has_action('admin_bar_menu', [AdminBar::class, 'add_badge']))->toBe(0)
+        ->and(has_filter('acf/settings/show_admin', [Acf::class, 'show_admin']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('acf/settings/capability', [Acf::class, 'capability']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });
