@@ -77,6 +77,8 @@ final class Screens
             'page:uamswp-gmb-export',
             'page:asp_export_import',
             'page:tablepress_export',
+            // Image maintenance: Regenerate Thumbnails, a screen that only starts a run.
+            'page:regenerate-thumbnails',
         ];
     }
 

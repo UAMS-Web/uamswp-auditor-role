@@ -109,6 +109,7 @@ it('decides each request', function (string $script, string $method, array $para
     'admin PUT' => ['post.php', 'PUT', [], true, 'method:PUT'],
     'options.php read' => ['options.php', 'GET', [], true, 'hidden:options.php'],
     'options.php save' => ['options.php', 'POST', [], true, 'method:POST'],
+    'regenerate thumbnails screen' => ['tools.php', 'GET', ['page' => 'regenerate-thumbnails'], true, 'hidden:tools.php?page=regenerate-thumbnails'],
     'admin-post' => ['admin-post.php', 'GET', ['action' => 'x'], true, 'script:admin-post.php'],
     'new post auto-draft' => ['post-new.php', 'GET', [], true, 'script:post-new.php'],
     'new upload' => ['media-new.php', 'GET', [], true, 'script:media-new.php'],
