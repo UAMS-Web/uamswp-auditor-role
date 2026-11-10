@@ -26,3 +26,15 @@ if (! class_exists('WP_Error')) {
         public function __construct(public string $code = '', public string $message = '', public mixed $data = '') {}
     }
 }
+
+if (! class_exists('WP_Post')) {
+    class WP_Post
+    {
+        public int $ID = 0;
+
+        public function __construct(object $post)
+        {
+            $this->ID = isset($post->ID) && is_int($post->ID) ? $post->ID : 0;
+        }
+    }
+}
