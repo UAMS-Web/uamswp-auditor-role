@@ -34,6 +34,9 @@ final class Screens
             'export-personal-data.php',
             'erase-personal-data.php',
             'site-health.php?tab=debug',
+            // Settings > Connectors (WordPress 7.0): connections to external services
+            // and their credentials.
+            'options-connectors.php',
             // Deploy tools: a settings save can deploy at once, and the screens carry tokens.
             'page:wppusher',
             'page:wppusher-plugins',
