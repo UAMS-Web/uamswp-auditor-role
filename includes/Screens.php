@@ -71,12 +71,15 @@ final class Screens
             'page:facetwp',
             'page:asp_updates_help',
             'page:geot-settings',
+            'page:wp-shortpixel-settings',
             // The hidden login address.
             'page:whl_settings',
             // Bulk data exports.
             'page:uamswp-gmb-export',
             'page:asp_export_import',
             'page:tablepress_export',
+            // Bulk actions: a screen that only starts a run.
+            'page:wp-short-pixel-bulk',
         ];
     }
 
