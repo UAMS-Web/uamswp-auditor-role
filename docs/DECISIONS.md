@@ -135,3 +135,14 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Why.** One CI definition for every repository, with nothing the old file checked left uncovered.
 
 **Rejected.** Moving `mutate` into the chain (mutation testing is out of scope for #39, and the chain's job reads its run with a different script). Passing `integration: 'true'` from the caller (the chain gives a caller no way to set the called action's inputs).
+
+## 2026-11-10 The Customizer (area: capabilities)
+
+**Decision.**
+
+- **`customize` is denied** for an Auditor in `MetaCaps::defaults()`. Core maps it to `edit_theme_options`, which the role holds so Appearance > Menus and Widgets open, so without the denial the Customizer, its menu item, the admin bar "Customize" link and the themes screen's "Customize" and "Live Preview" buttons were all available.
+- **`customize.php` is a hidden screen** as well, so a direct visit gets the hidden-screen message.
+
+**Why.** Every Customizer control saves a changeset, so the screen is a write surface with nothing to read that Appearance and the front end do not already show. `edit_css` was already denied.
+
+**Rejected.** Dropping `edit_theme_options` from the granted list (it would close Menus and Widgets, which an audit reads).

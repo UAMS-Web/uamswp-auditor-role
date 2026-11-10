@@ -34,6 +34,8 @@ final class Screens
             'export-personal-data.php',
             'erase-personal-data.php',
             'site-health.php?tab=debug',
+            // The Customizer, a write surface in every control (see MetaCaps).
+            'customize.php',
             // Deploy tools: a settings save can deploy at once, and the screens carry tokens.
             'page:wppusher',
             'page:wppusher-plugins',
