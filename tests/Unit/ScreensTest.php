@@ -30,6 +30,7 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'page:whl_settings',
     'page:uamswp-gmb-export', 'page:asp_export_import', 'page:tablepress_export',
     'page:wp-short-pixel-bulk',
+    'page:better-image-sizes/better-image-sizes.php',
 ];
 
 /** The dashboard widgets docs/WRITES-ON-LOAD.md removes for the role. */

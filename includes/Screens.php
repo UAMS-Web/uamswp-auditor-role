@@ -83,6 +83,8 @@ final class Screens
             'page:tablepress_export',
             // Bulk actions: a screen that only starts a run.
             'page:wp-short-pixel-bulk',
+            // Image maintenance: Better Image Sizes' settings and cached-image tools.
+            'page:better-image-sizes/better-image-sizes.php',
         ];
     }
 
