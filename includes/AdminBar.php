@@ -17,13 +17,32 @@ final class AdminBar
     /** The node ID. */
     public const NODE = 'uamswp-auditor-role-badge';
 
-    /** Core's "+ New" menu node, which core adds at priority 70. */
-    public const NEW_CONTENT = 'new-content';
+    /**
+     * The admin bar nodes an Auditor does not see. Each only offers an action
+     * the guard refuses, so for the role it leads to an error. A node's
+     * children go with it: the admin bar skips a node whose parent is not
+     * registered.
+     *
+     * A method, not a constant, so each entry is a line a test is seen to cover.
+     *
+     * @return list<string>
+     */
+    public static function hidden_nodes(): array
+    {
+        return [
+            // Core's "+ New" menu (priority 70): every entry opens a create
+            // screen whose first load inserts a row.
+            'new-content',
+            // FacetWP Cache's menu (priority 999): its two links empty the
+            // cache table with a GET.
+            'fwp-cache',
+        ];
+    }
 
     public static function boot(): void
     {
         add_action('admin_bar_menu', [self::class, 'add_badge'], 0);
-        add_action('admin_bar_menu', [self::class, 'remove_new_content'], PHP_INT_MAX);
+        add_action('admin_bar_menu', [self::class, 'remove_nodes'], PHP_INT_MAX);
         add_action('admin_enqueue_scripts', [self::class, 'add_style']);
         add_action('wp_enqueue_scripts', [self::class, 'add_style']);
     }
@@ -47,18 +66,18 @@ final class AdminBar
     }
 
     /**
-     * Take core's "+ New" menu out of the admin bar for an Auditor. Every entry
-     * in it opens a create screen whose first load inserts a row, which the
-     * guard refuses, so for the role it only leads to an error. Its children
-     * go with it: the admin bar skips a node whose parent is not registered.
+     * Take the hidden nodes out of the admin bar for an Auditor, after every
+     * plugin has added its own.
      */
-    public static function remove_new_content(mixed $bar): void
+    public static function remove_nodes(mixed $bar): void
     {
         if (! $bar instanceof WP_Admin_Bar || ! Session::is_auditor()) {
             return;
         }
 
-        $bar->remove_node(self::NEW_CONTENT);
+        foreach (self::hidden_nodes() as $node) {
+            $bar->remove_node($node);
+        }
     }
 
     /**
