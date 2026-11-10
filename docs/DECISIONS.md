@@ -123,3 +123,15 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Companion.** `docs/WALK.md`, `docs/WRITES-ON-LOAD.md`, and the pull request for #19.
 
+## 2026-11-09 CI calls the shared chain (#39)
+
+**Decision.**
+
+- **`ci.yml` calls `UAMS-Web/uams-ci-workflows` (pinned to `v0.9.0`) through one `checks` job** for the lint, static-analysis and Unit chain, with `floor-lint`, `download-archive` and `phpcs` switched on, `linux-only`, and `pest-command: composer test:unit`. The job named `CI` stays and `needs:` the call and the plain jobs.
+- **`integration`, `mutate` and `walk` stay as plain jobs beside the call.** The chain has no MySQL service or WordPress download, this plugin's `mutate` selects changed files under `includes/` and `tests/Walk/src/` and reads its run with `scripts/check-mutation-run.php`, and the screen walk is this plugin's own. The call passes `mutate: false`, so the chain's mutation jobs do not run.
+- **The setup action installs the Integration suite's Composer setup by default**, as the plugin template's does, because the chain's PHPStan job calls the action with no inputs and the analysis scans `tests/Integration/vendor`.
+- **The three plain jobs no longer wait on `rector` and `phpstan`**, which now run inside the call; they run beside it.
+
+**Why.** One CI definition for every repository, with nothing the old file checked left uncovered.
+
+**Rejected.** Moving `mutate` into the chain (mutation testing is out of scope for #39, and the chain's job reads its run with a different script). Passing `integration: 'true'` from the caller (the chain gives a caller no way to set the called action's inputs).

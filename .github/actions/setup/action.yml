@@ -13,7 +13,7 @@ inputs:
   integration:
     description: Also install the Integration suite's own Composer setup (tests/Integration).
     required: false
-    default: 'false'
+    default: 'true'
 
 runs:
   using: composite
