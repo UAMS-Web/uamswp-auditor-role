@@ -29,6 +29,7 @@ use UAMSWeb\AuditorRole\RequestGuard;
 use UAMSWeb\AuditorRole\Retention;
 use UAMSWeb\AuditorRole\Role;
 use UAMSWeb\AuditorRole\Screens;
+use UAMSWeb\AuditorRole\ShortPixel;
 
 require_once __DIR__.'/../Support/wp-cli-double.php';
 
@@ -62,6 +63,7 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_action('admin_menu', [LogViewer::class, 'register_page']))->toBe(10)
         ->and(has_action('wp_initialize_site', [Network::class, 'on_new_site']))->toBe(100)
         ->and(has_action('admin_bar_menu', [AdminBar::class, 'add_badge']))->toBe(0)
+        ->and(has_filter('shortpixel/processorjs/disable', [ShortPixel::class, 'disable_processor']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });
