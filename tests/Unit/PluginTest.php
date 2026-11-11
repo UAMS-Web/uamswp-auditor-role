@@ -27,6 +27,7 @@ use UAMSWeb\AuditorRole\LogViewer;
 use UAMSWeb\AuditorRole\MetaCaps;
 use UAMSWeb\AuditorRole\Network;
 use UAMSWeb\AuditorRole\Plugin;
+use UAMSWeb\AuditorRole\Previews;
 use UAMSWeb\AuditorRole\RegenerateThumbnails;
 use UAMSWeb\AuditorRole\RequestGuard;
 use UAMSWeb\AuditorRole\Retention;
@@ -73,6 +74,9 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_filter('acf/settings/show_admin', [Acf::class, 'show_admin']))->toBe(PHP_INT_MAX)
         ->and(has_filter('acf/settings/capability', [Acf::class, 'capability']))->toBe(PHP_INT_MAX)
         ->and(has_action('admin_bar_menu', [AdminBar::class, 'remove_new_content']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('map_meta_cap', [Previews::class, 'map']))->toBe(PHP_INT_MAX - 1)
+        ->and(has_action('admin_bar_menu', [Previews::class, 'remove_edit_link']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('edit_post_link', [Previews::class, 'edit_post_link']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });

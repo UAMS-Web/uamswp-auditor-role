@@ -172,3 +172,15 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Why.** Every Customizer control saves a changeset, so the screen is a write surface with nothing to read that Appearance and the front end do not already show. `edit_css` was already denied.
 
 **Rejected.** Dropping `edit_theme_options` from the granted list (it would close Menus and Widgets, which an audit reads).
+
+## 2026-11-10 Viewing drafts on the front end (area: capabilities)
+
+**Decision.**
+
+- **`edit_post` and `edit_page` answer `read` for an Auditor on a front-end read** (not the admin, AJAX, REST or cron; a GET or HEAD), for a post of a viewable type in a protected status (draft, pending, scheduled, and any status a plugin registers as protected). WordPress shows such a post, by preview link or by `?p=<id>`, only to a user who passes `edit_post`, and every post type's own edit capability resolves through these two.
+- **Everywhere else the check is unchanged**, so the post editor stays closed, and published and private posts keep their own capabilities.
+- **The front-end admin bar "Edit" link and the theme's `edit_post_link()` output are removed** for the role, since the allowance makes them appear on a draft and they lead to the refused editor.
+
+**Why.** Reading another user's draft is part of an audit, and the role held no capability that allowed it.
+
+**Rejected.** Granting `edit_others_posts`, `edit_others_pages` and each custom post type's equivalents (it opens the post editor for every post, whose load writes the post lock and autosave, and needs every type's capabilities named per deployment). Checking the `WP_CLI` and `XMLRPC_REQUEST` constants as well (XML-RPC sign-in is already refused for the role, a WP-CLI run is server access with the database guard still in place, and a constant cannot be tested both ways in one process).
