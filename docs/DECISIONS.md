@@ -161,3 +161,14 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Why.** Both post types map `edit_posts` to their own capability, so without it the Providers and Locations menus showed only their taxonomy screens.
 
 **Rejected.** Granting the capabilities through `uamswp_auditor_role_capabilities` in a deployment (the plugin already names UAMS plugins in its hidden screens, and a filter would leave the default role unable to read two of the site's main content types).
+
+## 2026-11-10 The Customizer (area: capabilities)
+
+**Decision.**
+
+- **`customize` is denied** for an Auditor in `MetaCaps::defaults()`. Core maps it to `edit_theme_options`, which the role holds so Appearance > Menus and Widgets open, so without the denial the Customizer, its menu item, the admin bar "Customize" link and the themes screen's "Customize" and "Live Preview" buttons were all available.
+- **`customize.php` is a hidden screen** as well, so a direct visit gets the hidden-screen message.
+
+**Why.** Every Customizer control saves a changeset, so the screen is a write surface with nothing to read that Appearance and the front end do not already show. `edit_css` was already denied.
+
+**Rejected.** Dropping `edit_theme_options` from the granted list (it would close Menus and Widgets, which an audit reads).
