@@ -2,8 +2,8 @@
 
 /**
  * UAMSWeb\AuditorRole\AdminBar, with WordPress mocked: the badge for an Auditor
- * and for another role (#17), and the "+ New" (#50) and FacetWP Cache (#76) menus
- * removed for an Auditor only.
+ * and for another role (#17), and the "+ New" (#50), FacetWP Cache (#76) and comments
+ * (#61) menus removed for an Auditor only.
  *
  * Mutation-clean under `composer mutate -- --path=includes/AdminBar.php`, with
  * no equivalent mutants.
@@ -93,11 +93,12 @@ it('adds no style when the admin bar is hidden or the user is another role', fun
     'another role, bar showing' => [false, true],
 ]);
 
-it('removes the "+ New" and FacetWP Cache menus for an Auditor', function (): void {
+it('removes the "+ New", FacetWP Cache and comments menus for an Auditor', function (): void {
     uamswp_auditor_role_as(true);
     $bar = uamswp_auditor_role_g1_bar();
     $bar->shouldReceive('remove_node')->once()->ordered()->with('new-content');
     $bar->shouldReceive('remove_node')->once()->ordered()->with('fwp-cache');
+    $bar->shouldReceive('remove_node')->once()->ordered()->with('comments');
 
     AdminBar::remove_nodes($bar);
 });
@@ -119,5 +120,5 @@ it('removes nothing when it is not given an admin bar', function (): void {
 });
 
 it('lists the hidden admin bar nodes', function (): void {
-    expect(AdminBar::hidden_nodes())->toBe(['new-content', 'fwp-cache']);
+    expect(AdminBar::hidden_nodes())->toBe(['new-content', 'fwp-cache', 'comments']);
 });

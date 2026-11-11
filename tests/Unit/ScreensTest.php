@@ -21,6 +21,7 @@ use UAMSWeb\AuditorRole\Screens;
 /** The hidden screens, as #10 groups them. */
 const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'options.php', 'export.php', 'import.php', 'export-personal-data.php', 'erase-personal-data.php', 'site-health.php?tab=debug', 'options-connectors.php', 'customize.php',
+    'edit-comments.php', 'site-editor.php', 'font-library.php',
     'page:wppusher', 'page:wppusher-plugins', 'page:wppusher-plugins-create', 'page:wppusher-themes', 'page:wppusher-themes-create', 'page:wppusher-settings',
     'page:wp-mail-smtp', 'page:wp-mail-smtp-logs', 'page:wp-mail-smtp-reports', 'page:wp-mail-smtp-tools', 'page:formidable-smtp',
     'page:gf_entries', 'page:gf_settings', 'page:gf_export', 'page:gf_system_status', 'page:formidable-entries', 'page:formidable-settings', 'page:formidable-import',
@@ -34,6 +35,14 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'page:regenerate-thumbnails',
     'edit.php?post_type=acf-field-group', 'edit.php?post_type=acf-post-type', 'edit.php?post_type=acf-taxonomy', 'edit.php?post_type=acf-ui-options-page',
     'edit-tags.php?taxonomy=acf-field-group-category', 'page:acf-tools', 'page:acfe-settings',
+    'page:asp_main_settings', 'page:asp_index_table', 'page:asp_priorities', 'page:asp_statistics', 'page:asp_analytics', 'page:asp_cache_settings', 'page:asp_performance', 'page:asp_compatibility_settings', 'page:asp_maintenance',
+    'page:ef-settings', 'page:ef-calendar-settings', 'page:ef-custom-status-settings', 'page:ef-dashboard-settings', 'page:ef-editorial-comments-settings', 'page:ef-editorial-metadata-settings', 'page:ef-notifications-settings', 'page:ef-story-budget-settings', 'page:ef-user-groups-settings',
+    'page:seopress-option', 'page:seopress-titles', 'page:seopress-xml-sitemap', 'page:seopress-social', 'page:seopress-instant-indexing', 'page:seopress-advanced', 'page:seopress-import-export', 'page:seopress-pro-page', 'page:seopress-schemas', 'page:seopress-redirections', 'page:seopress-broken-links',
+    'edit.php?post_type=seopress_404', 'edit.php?post_type=seopress_bot', 'edit.php?post_type=seopress_schemas',
+    'page:genesis', 'page:genesis-import-export', 'page:seo-settings', 'page:genesis-getting-started', 'page:genesis-cpt-archive-*',
+    'page:uamswp-settings', 'page:uams-search-site',
+    'page:wp-accessibility', 'page:wp-accessibility-overlay', 'page:wp-accessibility-admin', 'page:wp-accessibility-help',
+    'page:mla-settings-menu*',
 ];
 
 /** The dashboard widgets docs/WRITES-ON-LOAD.md removes for the role. */
@@ -68,6 +77,12 @@ it('matches an entry against a screen', function (string $entry, string $script,
     'no page' => ['page:gf_entries', 'admin.php', [], false],
     'numeric page' => ['page:5', 'admin.php', ['page' => 5], true],
     'array page' => ['page:x', 'admin.php', ['page' => ['x']], false],
+    'prefix, a page under it' => ['page:genesis-cpt-archive-*', 'edit.php', ['page' => 'genesis-cpt-archive-post'], true],
+    'prefix, the prefix itself' => ['page:mla-settings-menu*', 'options-general.php', ['page' => 'mla-settings-menu'], true],
+    'prefix, another page' => ['page:mla-settings-menu*', 'upload.php', ['page' => 'mla-menu'], false],
+    'prefix, no page' => ['page:mla-settings-menu*', 'options-general.php', [], false],
+    'an exact entry is not a prefix' => ['page:genesis', 'admin.php', ['page' => 'genesis-import-export'], false],
+    'a star mid-slug is literal' => ['page:a*b', 'admin.php', ['page' => 'a*b'], true],
     'script' => ['export.php', 'export.php', [], true],
     'script with extra params' => ['export.php', 'export.php', ['download' => '1'], true],
     'another script' => ['export.php', 'import.php', [], false],

@@ -36,6 +36,9 @@ final class AdminBar
             // FacetWP Cache's menu (priority 999): its two links empty the
             // cache table with a GET.
             'fwp-cache',
+            // Core's comment count (priority 60): it links to the Comments
+            // screen, which is hidden.
+            'comments',
         ];
     }
 
