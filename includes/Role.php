@@ -20,7 +20,7 @@ final class Role
     /**
      * The role definition's version. Raise it to rewrite the role on every site.
      */
-    public const VERSION = '1';
+    public const VERSION = '2';
 
     /** The option that records the role definition a site holds. */
     public const OPTION = 'uamswp_auditor_role_role_version';
@@ -36,6 +36,10 @@ final class Role
      * screens. The guard refuses every write those capabilities would allow.
      * `upload_files` opens the Media library and `manage_categories` the term
      * screens, for the same reason.
+     * `edit_physicians` and `edit_locations` open the list screens of UAMSWP
+     * Find-a-Doc's `provider` and `location` post types, which map their
+     * capabilities to those names, and the `read_private_` pair shows their
+     * private posts there.
      *
      * A method, not a constant, so each entry is a line a test is seen to cover.
      *
@@ -56,6 +60,10 @@ final class Role
             'edit_theme_options',
             'view_site_health_checks',
             'manage_options',
+            'edit_physicians',
+            'read_private_physicians',
+            'edit_locations',
+            'read_private_locations',
         ];
     }
 
