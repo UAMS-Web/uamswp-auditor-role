@@ -190,7 +190,7 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Decision.**
 
 - **An Auditor can open the Plugins screen on a network that has not enabled the Plugins menu for site administrators.** For an Auditor's `activate_plugins` check, `MetaCaps::map()` drops the `manage_network_plugins` that core's `map_meta_cap()` adds for that network setting, so the check resolves to `activate_plugins`, which the role holds.
-- **The screen stays a list.** `activate_plugin`, `deactivate_plugin` and `deactivate_plugins` stay denied, and the `install_`, `update_` and `delete_` families stay never granted, so no row action shows. The bulk "Activate" and "Deactivate" options, which core adds without a capability check, are removed for the role through `bulk_actions-plugins`.
+- **The screen stays a list.** `activate_plugin`, `deactivate_plugin` and `deactivate_plugins` stay denied, and the `install_`, `update_` and `delete_` families stay never granted, so no row action shows. The bulk "Activate" and "Deactivate" options, which core adds without a capability check, are removed for the role through `bulk_actions-plugins`. Network-active plugins, and inactive network-only ones, are listed for the role through `show_network_active_plugins`; core labels each "Network Active" or "Network Only" in place of its actions and gives it no bulk checkbox.
 - **Site administrators are unchanged**: the network setting still closes the screen to them.
 
 **Why.** An audit reads the plugin list, and `wp auditor discover` and `wp auditor network-export` give it only to someone with server access.
