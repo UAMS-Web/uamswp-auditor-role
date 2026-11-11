@@ -136,6 +136,43 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Rejected.** Moving `mutate` into the chain (mutation testing is out of scope for #39, and the chain's job reads its run with a different script). Passing `integration: 'true'` from the caller (the chain gives a caller no way to set the called action's inputs).
 
+## 2026-11-10 ShortPixel's background processor in an Auditor session (area: third-party plugins)
+
+**Decision.**
+
+- **ShortPixel's processor script is turned off for an Auditor** through ShortPixel's own `shortpixel/processorjs/disable` filter, so an Auditor's browser no longer asks `admin-ajax.php` to optimize images from the site's shared queue. Media and editor screens still show each image's ShortPixel status.
+- **ShortPixel's settings and Bulk screens are hidden.** The settings screen shows the API key, and the role holds `manage_options`; ShortPixel runs the processor on the Bulk screen even with the filter set, and that screen only starts a run.
+- **`shortpixel_image_processing` stays off the AJAX allowlist.** It writes files and rows.
+
+**Why.** The request guard refused the action correctly, and ShortPixel showed the refusal as a fatal error every few seconds on the Media screens.
+
+**Rejected.** Not loading ShortPixel for an Auditor through `shortpixel/plugin/init` (simpler, but it hides the optimization status an audit can need). Allowlisting the action (a write).
+
+**Companion.** `docs/WRITES-ON-LOAD.md`.
+
+## 2026-11-10 Find-a-Doc's provider and location list screens (area: role)
+
+**Decision.**
+
+- **Four more granted capabilities.** `edit_physicians` and `read_private_physicians` (UAMSWP Find-a-Doc's `provider` post type) and `edit_locations` and `read_private_locations` (its `location` post type) join the granted list. Each opens a list screen or shows private posts on it, as `edit_posts` and `read_private_posts` do for posts; the guard refuses every write they would allow.
+- **None of the types' other capabilities are granted.** `edit_others_*`, `edit_published_*`, `publish_*` and `delete_*` stay off the list, so the post editor stays closed for both types.
+- **`Role::VERSION` is raised to `2`**, so every site rewrites the role.
+
+**Why.** Both post types map `edit_posts` to their own capability, so without it the Providers and Locations menus showed only their taxonomy screens.
+
+**Rejected.** Granting the capabilities through `uamswp_auditor_role_capabilities` in a deployment (the plugin already names UAMS plugins in its hidden screens, and a filter would leave the default role unable to read two of the site's main content types).
+
+## 2026-11-10 The Customizer (area: capabilities)
+
+**Decision.**
+
+- **`customize` is denied** for an Auditor in `MetaCaps::defaults()`. Core maps it to `edit_theme_options`, which the role holds so Appearance > Menus and Widgets open, so without the denial the Customizer, its menu item, the admin bar "Customize" link and the themes screen's "Customize" and "Live Preview" buttons were all available.
+- **`customize.php` is a hidden screen** as well, so a direct visit gets the hidden-screen message.
+
+**Why.** Every Customizer control saves a changeset, so the screen is a write surface with nothing to read that Appearance and the front end do not already show. `edit_css` was already denied.
+
+**Rejected.** Dropping `edit_theme_options` from the granted list (it would close Menus and Widgets, which an audit reads).
+
 ## 2026-11-10 Viewing drafts on the front end (area: capabilities)
 
 **Decision.**

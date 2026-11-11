@@ -34,6 +34,11 @@ final class Screens
             'export-personal-data.php',
             'erase-personal-data.php',
             'site-health.php?tab=debug',
+            // Settings > Connectors (WordPress 7.0): connections to external services
+            // and their credentials.
+            'options-connectors.php',
+            // The Customizer, a write surface in every control (see MetaCaps).
+            'customize.php',
             // Deploy tools: a settings save can deploy at once, and the screens carry tokens.
             'page:wppusher',
             'page:wppusher-plugins',
@@ -71,12 +76,28 @@ final class Screens
             'page:facetwp',
             'page:asp_updates_help',
             'page:geot-settings',
+            'page:wp-shortpixel-settings',
             // The hidden login address.
             'page:whl_settings',
             // Bulk data exports.
             'page:uamswp-gmb-export',
             'page:asp_export_import',
             'page:tablepress_export',
+            // Bulk actions: a screen that only starts a run.
+            'page:wp-short-pixel-bulk',
+            // Image maintenance: Better Image Sizes' settings and cached-image tools.
+            'page:better-image-sizes/better-image-sizes.php',
+            // Image maintenance: Regenerate Thumbnails, a screen that only starts a run.
+            'page:regenerate-thumbnails',
+            // ACF's data model: field groups, post types, taxonomies, options pages, tools,
+            // and ACF Extended's settings and field group categories.
+            'edit.php?post_type=acf-field-group',
+            'edit.php?post_type=acf-post-type',
+            'edit.php?post_type=acf-taxonomy',
+            'edit.php?post_type=acf-ui-options-page',
+            'edit-tags.php?taxonomy=acf-field-group-category',
+            'page:acf-tools',
+            'page:acfe-settings',
         ];
     }
 
