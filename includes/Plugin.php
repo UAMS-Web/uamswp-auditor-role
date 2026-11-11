@@ -38,6 +38,7 @@ final class Plugin
         RegenerateThumbnails::boot();
         Acf::boot();
         Previews::boot();
+        ListLinks::boot();
 
         add_action('init', [Role::class, 'maybe_register'], 0);
         add_action('init', [self::class, 'load_textdomain']);
