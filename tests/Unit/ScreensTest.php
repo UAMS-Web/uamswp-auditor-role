@@ -20,15 +20,20 @@ use UAMSWeb\AuditorRole\Screens;
 
 /** The hidden screens, as #10 groups them. */
 const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
-    'options.php', 'export.php', 'import.php', 'export-personal-data.php', 'erase-personal-data.php', 'site-health.php?tab=debug',
+    'options.php', 'export.php', 'import.php', 'export-personal-data.php', 'erase-personal-data.php', 'site-health.php?tab=debug', 'options-connectors.php', 'customize.php',
     'page:wppusher', 'page:wppusher-plugins', 'page:wppusher-plugins-create', 'page:wppusher-themes', 'page:wppusher-themes-create', 'page:wppusher-settings',
     'page:wp-mail-smtp', 'page:wp-mail-smtp-logs', 'page:wp-mail-smtp-reports', 'page:wp-mail-smtp-tools', 'page:formidable-smtp',
     'page:gf_entries', 'page:gf_settings', 'page:gf_export', 'page:gf_system_status', 'page:formidable-entries', 'page:formidable-settings', 'page:formidable-import',
     'edit.php?post_type=nf_sub', 'page:nf-submissions', 'page:nf-settings', 'page:nf-import-export', 'page:nf-system-status',
     'page:transients-manager', 'page:acfe-options',
-    'page:acf-settings-updates', 'page:seopress-license', 'page:seopress-google-analytics', 'page:relevanssi-premium/relevanssi.php', 'page:facetwp', 'page:asp_updates_help', 'page:geot-settings',
+    'page:acf-settings-updates', 'page:seopress-license', 'page:seopress-google-analytics', 'page:relevanssi-premium/relevanssi.php', 'page:facetwp', 'page:asp_updates_help', 'page:geot-settings', 'page:wp-shortpixel-settings',
     'page:whl_settings',
     'page:uamswp-gmb-export', 'page:asp_export_import', 'page:tablepress_export',
+    'page:wp-short-pixel-bulk',
+    'page:better-image-sizes/better-image-sizes.php',
+    'page:regenerate-thumbnails',
+    'edit.php?post_type=acf-field-group', 'edit.php?post_type=acf-post-type', 'edit.php?post_type=acf-taxonomy', 'edit.php?post_type=acf-ui-options-page',
+    'edit-tags.php?taxonomy=acf-field-group-category', 'page:acf-tools', 'page:acfe-settings',
 ];
 
 /** The dashboard widgets docs/WRITES-ON-LOAD.md removes for the role. */

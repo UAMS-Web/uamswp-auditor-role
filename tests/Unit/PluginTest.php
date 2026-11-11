@@ -16,19 +16,25 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use UAMSWeb\AuditorRole\Account;
+use UAMSWeb\AuditorRole\Acf;
 use UAMSWeb\AuditorRole\AdminBar;
+use UAMSWeb\AuditorRole\BetterImageSizes;
 use UAMSWeb\AuditorRole\Cli\AuditorCommand;
 use UAMSWeb\AuditorRole\Cli\LogCommand;
 use UAMSWeb\AuditorRole\DatabaseGuard;
+use UAMSWeb\AuditorRole\ListLinks;
 use UAMSWeb\AuditorRole\Log;
 use UAMSWeb\AuditorRole\LogViewer;
 use UAMSWeb\AuditorRole\MetaCaps;
 use UAMSWeb\AuditorRole\Network;
 use UAMSWeb\AuditorRole\Plugin;
+use UAMSWeb\AuditorRole\Previews;
+use UAMSWeb\AuditorRole\RegenerateThumbnails;
 use UAMSWeb\AuditorRole\RequestGuard;
 use UAMSWeb\AuditorRole\Retention;
 use UAMSWeb\AuditorRole\Role;
 use UAMSWeb\AuditorRole\Screens;
+use UAMSWeb\AuditorRole\ShortPixel;
 
 require_once __DIR__.'/../Support/wp-cli-double.php';
 
@@ -62,7 +68,19 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_action('admin_menu', [LogViewer::class, 'register_page']))->toBe(10)
         ->and(has_action('wp_initialize_site', [Network::class, 'on_new_site']))->toBe(100)
         ->and(has_action('admin_bar_menu', [AdminBar::class, 'add_badge']))->toBe(0)
+        ->and(has_filter('shortpixel/processorjs/disable', [ShortPixel::class, 'disable_processor']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('media_row_actions', [BetterImageSizes::class, 'remove_row_action']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('attachment_fields_to_edit', [BetterImageSizes::class, 'remove_field']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('regenerate_thumbs_cap', [RegenerateThumbnails::class, 'capability']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('acf/settings/show_admin', [Acf::class, 'show_admin']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('acf/settings/capability', [Acf::class, 'capability']))->toBe(PHP_INT_MAX)
         ->and(has_action('admin_bar_menu', [AdminBar::class, 'remove_nodes']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('map_meta_cap', [Previews::class, 'map']))->toBe(PHP_INT_MAX - 1)
+        ->and(has_action('admin_bar_menu', [Previews::class, 'remove_edit_link']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('edit_post_link', [Previews::class, 'edit_post_link']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('post_row_actions', [ListLinks::class, 'row_actions']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('page_row_actions', [ListLinks::class, 'row_actions']))->toBe(PHP_INT_MAX)
+        ->and(has_action('admin_footer-edit.php', [ListLinks::class, 'print_title_script']))->toBe(10)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });

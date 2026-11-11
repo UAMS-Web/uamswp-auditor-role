@@ -35,6 +35,7 @@ const UAMSWP_AUDITOR_ROLE_SPEC_DENIED = [
     'export_others_personal_data',
     'edit_css',
     'upgrade_db',
+    'customize',
 ];
 
 beforeEach(function (): void {
