@@ -18,7 +18,8 @@ final class Screens
 
     /**
      * The hidden screens. An entry is `page:<slug>` for a plugin page under any
-     * parent, or `<script>.php` with optional query parameters that must all match.
+     * parent, `page:<prefix>*` for every plugin page whose slug starts with the
+     * prefix, or `<script>.php` with optional query parameters that must all match.
      * A method, not a constant, so each entry is a line a test is seen to cover.
      *
      * @return list<string>
@@ -39,6 +40,10 @@ final class Screens
             'options-connectors.php',
             // The Customizer, a write surface in every control (see MetaCaps).
             'customize.php',
+            // Comment moderation, the Site Editor and the Font Library: screens that only change things.
+            'edit-comments.php',
+            'site-editor.php',
+            'font-library.php',
             // Deploy tools: a settings save can deploy at once, and the screens carry tokens.
             'page:wppusher',
             'page:wppusher-plugins',
@@ -98,6 +103,59 @@ final class Screens
             'edit-tags.php?taxonomy=acf-field-group-category',
             'page:acf-tools',
             'page:acfe-settings',
+            // Ajax Search Pro: search, index and cache settings, and runs that rebuild or purge.
+            'page:asp_main_settings',
+            'page:asp_index_table',
+            'page:asp_priorities',
+            'page:asp_statistics',
+            'page:asp_analytics',
+            'page:asp_cache_settings',
+            'page:asp_performance',
+            'page:asp_compatibility_settings',
+            'page:asp_maintenance',
+            // Edit Flow: the settings screen of every module, enabled or not.
+            'page:ef-settings',
+            'page:ef-calendar-settings',
+            'page:ef-custom-status-settings',
+            'page:ef-dashboard-settings',
+            'page:ef-editorial-comments-settings',
+            'page:ef-editorial-metadata-settings',
+            'page:ef-notifications-settings',
+            'page:ef-story-budget-settings',
+            'page:ef-user-groups-settings',
+            // SEOPress and SEOPress PRO: site-wide titles, sitemaps, indexing (with its API keys),
+            // redirections, broken links, bots and schemas.
+            'page:seopress-option',
+            'page:seopress-titles',
+            'page:seopress-xml-sitemap',
+            'page:seopress-social',
+            'page:seopress-instant-indexing',
+            'page:seopress-advanced',
+            'page:seopress-import-export',
+            'page:seopress-pro-page',
+            'page:seopress-schemas',
+            'page:seopress-redirections',
+            'page:seopress-broken-links',
+            'edit.php?post_type=seopress_404',
+            'edit.php?post_type=seopress_bot',
+            'edit.php?post_type=seopress_schemas',
+            // Genesis: theme settings, import and export, SEO settings, the onboarding that
+            // imports demo content, and each post type's archive settings.
+            'page:genesis',
+            'page:genesis-import-export',
+            'page:seo-settings',
+            'page:genesis-getting-started',
+            'page:genesis-cpt-archive-*',
+            // UAMS Settings (the theme's options page) and the UAMS Search settings under it.
+            'page:uamswp-settings',
+            'page:uams-search-site',
+            // WP Accessibility: the site's front-end fixes and its testing tools.
+            'page:wp-accessibility',
+            'page:wp-accessibility-overlay',
+            'page:wp-accessibility-admin',
+            'page:wp-accessibility-help',
+            // Media Library Assistant: every settings tab (the Media > Assistant list stays).
+            'page:mla-settings-menu*',
         ];
     }
 
@@ -205,7 +263,14 @@ final class Screens
     public static function matches(string $entry, string $script, array $params): bool
     {
         if (str_starts_with($entry, 'page:')) {
-            return isset($params['page']) && is_scalar($params['page']) && substr($entry, 5) === (string) $params['page'];
+            if (! isset($params['page']) || ! is_scalar($params['page'])) {
+                return false;
+            }
+
+            $slug = substr($entry, 5);
+            $page = (string) $params['page'];
+
+            return str_ends_with($slug, '*') ? str_starts_with($page, substr($slug, 0, -1)) : $slug === $page;
         }
 
         [$path, $query] = self::split($entry);
