@@ -85,6 +85,8 @@ final class Screens
             'page:wp-short-pixel-bulk',
             // Image maintenance: Better Image Sizes' settings and cached-image tools.
             'page:better-image-sizes/better-image-sizes.php',
+            // Image maintenance: Regenerate Thumbnails, a screen that only starts a run.
+            'page:regenerate-thumbnails',
         ];
     }
 

@@ -26,6 +26,7 @@ use UAMSWeb\AuditorRole\LogViewer;
 use UAMSWeb\AuditorRole\MetaCaps;
 use UAMSWeb\AuditorRole\Network;
 use UAMSWeb\AuditorRole\Plugin;
+use UAMSWeb\AuditorRole\RegenerateThumbnails;
 use UAMSWeb\AuditorRole\RequestGuard;
 use UAMSWeb\AuditorRole\Retention;
 use UAMSWeb\AuditorRole\Role;
@@ -67,6 +68,7 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_filter('shortpixel/processorjs/disable', [ShortPixel::class, 'disable_processor']))->toBe(PHP_INT_MAX)
         ->and(has_filter('media_row_actions', [BetterImageSizes::class, 'remove_row_action']))->toBe(PHP_INT_MAX)
         ->and(has_filter('attachment_fields_to_edit', [BetterImageSizes::class, 'remove_field']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('regenerate_thumbs_cap', [RegenerateThumbnails::class, 'capability']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });
