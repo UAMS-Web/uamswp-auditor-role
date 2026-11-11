@@ -149,3 +149,15 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Rejected.** Not loading ShortPixel for an Auditor through `shortpixel/plugin/init` (simpler, but it hides the optimization status an audit can need). Allowlisting the action (a write).
 
 **Companion.** `docs/WRITES-ON-LOAD.md`.
+
+## 2026-11-10 Find-a-Doc's provider and location list screens (area: role)
+
+**Decision.**
+
+- **Four more granted capabilities.** `edit_physicians` and `read_private_physicians` (UAMSWP Find-a-Doc's `provider` post type) and `edit_locations` and `read_private_locations` (its `location` post type) join the granted list. Each opens a list screen or shows private posts on it, as `edit_posts` and `read_private_posts` do for posts; the guard refuses every write they would allow.
+- **None of the types' other capabilities are granted.** `edit_others_*`, `edit_published_*`, `publish_*` and `delete_*` stay off the list, so the post editor stays closed for both types.
+- **`Role::VERSION` is raised to `2`**, so every site rewrites the role.
+
+**Why.** Both post types map `edit_posts` to their own capability, so without it the Providers and Locations menus showed only their taxonomy screens.
+
+**Rejected.** Granting the capabilities through `uamswp_auditor_role_capabilities` in a deployment (the plugin already names UAMS plugins in its hidden screens, and a filter would leave the default role unable to read two of the site's main content types).

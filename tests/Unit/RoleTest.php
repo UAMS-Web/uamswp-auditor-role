@@ -35,6 +35,10 @@ const UAMSWP_AUDITOR_ROLE_SPEC_GRANTED = [
     'edit_theme_options',
     'view_site_health_checks',
     'manage_options',
+    'edit_physicians',
+    'read_private_physicians',
+    'edit_locations',
+    'read_private_locations',
 ];
 
 beforeEach(function (): void {
