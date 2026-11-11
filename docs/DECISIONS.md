@@ -135,3 +135,17 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Why.** One CI definition for every repository, with nothing the old file checked left uncovered.
 
 **Rejected.** Moving `mutate` into the chain (mutation testing is out of scope for #39, and the chain's job reads its run with a different script). Passing `integration: 'true'` from the caller (the chain gives a caller no way to set the called action's inputs).
+
+## 2026-11-10 ShortPixel's background processor in an Auditor session (area: third-party plugins)
+
+**Decision.**
+
+- **ShortPixel's processor script is turned off for an Auditor** through ShortPixel's own `shortpixel/processorjs/disable` filter, so an Auditor's browser no longer asks `admin-ajax.php` to optimize images from the site's shared queue. Media and editor screens still show each image's ShortPixel status.
+- **ShortPixel's settings and Bulk screens are hidden.** The settings screen shows the API key, and the role holds `manage_options`; ShortPixel runs the processor on the Bulk screen even with the filter set, and that screen only starts a run.
+- **`shortpixel_image_processing` stays off the AJAX allowlist.** It writes files and rows.
+
+**Why.** The request guard refused the action correctly, and ShortPixel showed the refusal as a fatal error every few seconds on the Media screens.
+
+**Rejected.** Not loading ShortPixel for an Auditor through `shortpixel/plugin/init` (simpler, but it hides the optimization status an audit can need). Allowlisting the action (a write).
+
+**Companion.** `docs/WRITES-ON-LOAD.md`.
