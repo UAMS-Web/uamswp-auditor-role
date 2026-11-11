@@ -72,6 +72,7 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_filter('regenerate_thumbs_cap', [RegenerateThumbnails::class, 'capability']))->toBe(PHP_INT_MAX)
         ->and(has_filter('acf/settings/show_admin', [Acf::class, 'show_admin']))->toBe(PHP_INT_MAX)
         ->and(has_filter('acf/settings/capability', [Acf::class, 'capability']))->toBe(PHP_INT_MAX)
+        ->and(has_action('admin_bar_menu', [AdminBar::class, 'remove_new_content']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });
