@@ -127,6 +127,15 @@ final class MetaCaps
             return ['do_not_allow'];
         }
 
+        // On a network that has not enabled the Plugins menu for site
+        // administrators, core adds `manage_network_plugins` to this check.
+        // The role may still list plugins: every action on the screen checks a
+        // capability the role never passes (`activate_plugin`, `deactivate_plugin`,
+        // and the `install_`, `update_` and `delete_` families).
+        if ($cap === 'activate_plugins') {
+            $caps = array_values(array_diff($caps, ['manage_network_plugins']));
+        }
+
         foreach ($caps as $mapped) {
             if (is_string($mapped) && Role::is_never_granted($mapped)) {
                 return ['do_not_allow'];

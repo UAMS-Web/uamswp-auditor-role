@@ -153,3 +153,30 @@ it('holds the list once init has run, and not before', function (): void {
     expect(MetaCaps::denied())->toContain('held');
     expect(MetaCaps::denied())->toContain('held');
 });
+
+it('lets an Auditor list plugins past the network setting, in either order core lists the caps', function (array $caps): void {
+    uamswp_auditor_role_as(true);
+
+    expect(MetaCaps::map($caps, 'activate_plugins', 7, []))->toBe(['activate_plugins']);
+})->with([
+    'core order' => [['activate_plugins', 'manage_network_plugins']],
+    'reversed' => [['manage_network_plugins', 'activate_plugins']],
+    'the network setting on' => [['activate_plugins']],
+]);
+
+it('still denies a single plugin activation, deactivation and the network capability itself', function (string $cap, array $caps): void {
+    uamswp_auditor_role_as(true);
+
+    expect(MetaCaps::map($caps, $cap, 7, ['a/a.php']))->toBe(['do_not_allow']);
+})->with([
+    'activate_plugin' => ['activate_plugin', ['activate_plugins', 'manage_network_plugins']],
+    'deactivate_plugin' => ['deactivate_plugin', ['activate_plugins']],
+    'deactivate_plugins' => ['deactivate_plugins', ['activate_plugins', 'manage_network_plugins']],
+    'manage_network_plugins' => ['manage_network_plugins', ['manage_network_plugins']],
+]);
+
+it('leaves the network capability in place for another role', function (): void {
+    uamswp_auditor_role_as(false);
+
+    expect(MetaCaps::map(['activate_plugins', 'manage_network_plugins'], 'activate_plugins', 7, []))->toBe(['activate_plugins', 'manage_network_plugins']);
+});

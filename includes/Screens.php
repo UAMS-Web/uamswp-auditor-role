@@ -119,6 +119,30 @@ final class Screens
     {
         add_action('admin_menu', [self::class, 'remove_menu_entries'], PHP_INT_MAX);
         add_action('wp_dashboard_setup', [self::class, 'remove_dashboard_writers'], PHP_INT_MAX);
+        add_filter('bulk_actions-plugins', [self::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
+        add_filter('show_network_active_plugins', [self::class, 'show_network_active_plugins'], PHP_INT_MAX);
+    }
+
+    /**
+     * List network-active plugins, and inactive network-only ones, on a site's
+     * Plugins screen for an Auditor. Core shows them only to a user who can
+     * `manage_network_plugins`, labels each "Network Active" or "Network Only"
+     * in place of its actions, and gives it no bulk checkbox, so nothing on the
+     * row acts.
+     */
+    public static function show_network_active_plugins(mixed $show): mixed
+    {
+        return Session::is_auditor() ? true : $show;
+    }
+
+    /**
+     * Offer an Auditor no bulk actions on the Plugins screen. Core adds
+     * "Activate" and "Deactivate" there without a capability check of its own,
+     * and both submit a write the guard refuses.
+     */
+    public static function remove_plugin_bulk_actions(mixed $actions): mixed
+    {
+        return Session::is_auditor() ? [] : $actions;
     }
 
     /**
