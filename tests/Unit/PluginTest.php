@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 use Brain\Monkey\Functions;
 use UAMSWeb\AuditorRole\Account;
+use UAMSWeb\AuditorRole\Acf;
 use UAMSWeb\AuditorRole\AdminBar;
 use UAMSWeb\AuditorRole\BetterImageSizes;
 use UAMSWeb\AuditorRole\Cli\AuditorCommand;
@@ -69,6 +70,8 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_filter('media_row_actions', [BetterImageSizes::class, 'remove_row_action']))->toBe(PHP_INT_MAX)
         ->and(has_filter('attachment_fields_to_edit', [BetterImageSizes::class, 'remove_field']))->toBe(PHP_INT_MAX)
         ->and(has_filter('regenerate_thumbs_cap', [RegenerateThumbnails::class, 'capability']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('acf/settings/show_admin', [Acf::class, 'show_admin']))->toBe(PHP_INT_MAX)
+        ->and(has_filter('acf/settings/capability', [Acf::class, 'capability']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });

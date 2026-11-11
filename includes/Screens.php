@@ -87,6 +87,15 @@ final class Screens
             'page:better-image-sizes/better-image-sizes.php',
             // Image maintenance: Regenerate Thumbnails, a screen that only starts a run.
             'page:regenerate-thumbnails',
+            // ACF's data model: field groups, post types, taxonomies, options pages, tools,
+            // and ACF Extended's settings and field group categories.
+            'edit.php?post_type=acf-field-group',
+            'edit.php?post_type=acf-post-type',
+            'edit.php?post_type=acf-taxonomy',
+            'edit.php?post_type=acf-ui-options-page',
+            'edit-tags.php?taxonomy=acf-field-group-category',
+            'page:acf-tools',
+            'page:acfe-settings',
         ];
     }
 

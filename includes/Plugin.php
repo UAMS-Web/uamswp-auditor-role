@@ -36,6 +36,7 @@ final class Plugin
         ShortPixel::boot();
         BetterImageSizes::boot();
         RegenerateThumbnails::boot();
+        Acf::boot();
 
         add_action('init', [Role::class, 'maybe_register'], 0);
         add_action('init', [self::class, 'load_textdomain']);

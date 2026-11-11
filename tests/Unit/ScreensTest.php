@@ -32,6 +32,8 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'page:wp-short-pixel-bulk',
     'page:better-image-sizes/better-image-sizes.php',
     'page:regenerate-thumbnails',
+    'edit.php?post_type=acf-field-group', 'edit.php?post_type=acf-post-type', 'edit.php?post_type=acf-taxonomy', 'edit.php?post_type=acf-ui-options-page',
+    'edit-tags.php?taxonomy=acf-field-group-category', 'page:acf-tools', 'page:acfe-settings',
 ];
 
 /** The dashboard widgets docs/WRITES-ON-LOAD.md removes for the role. */
