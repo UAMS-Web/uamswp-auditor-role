@@ -2,7 +2,8 @@
 
 /**
  * UAMSWeb\AuditorRole\AdminBar, with WordPress mocked: the badge for an Auditor
- * and for another role (#17).
+ * and for another role (#17), and the "+ New" menu removed for an Auditor only
+ * (#50).
  *
  * Mutation-clean under `composer mutate -- --path=includes/AdminBar.php`, with
  * no equivalent mutants.
@@ -32,8 +33,9 @@ beforeEach(function (): void {
     Functions\when('esc_html__')->alias(static fn (string $text): string => 'escaped:'.$text);
 });
 
-it('hooks the badge first in the admin bar and the style on both admin and front end', function (): void {
+it('hooks the badge first and the "+ New" removal last in the admin bar, and the style on both admin and front end', function (): void {
     Actions\expectAdded('admin_bar_menu')->once()->with([AdminBar::class, 'add_badge'], 0);
+    Actions\expectAdded('admin_bar_menu')->once()->with([AdminBar::class, 'remove_new_content'], PHP_INT_MAX);
     Actions\expectAdded('admin_enqueue_scripts')->once()->with([AdminBar::class, 'add_style']);
     Actions\expectAdded('wp_enqueue_scripts')->once()->with([AdminBar::class, 'add_style']);
 
@@ -90,3 +92,27 @@ it('adds no style when the admin bar is hidden or the user is another role', fun
     'auditor, bar hidden' => [true, false],
     'another role, bar showing' => [false, true],
 ]);
+
+it('removes the "+ New" menu for an Auditor', function (): void {
+    uamswp_auditor_role_as(true);
+    $bar = uamswp_auditor_role_g1_bar();
+    $bar->shouldReceive('remove_node')->once()->with('new-content');
+
+    AdminBar::remove_new_content($bar);
+});
+
+it('leaves the "+ New" menu for another role', function (): void {
+    uamswp_auditor_role_as(false);
+    $bar = uamswp_auditor_role_g1_bar();
+    $bar->shouldReceive('remove_node')->never();
+
+    AdminBar::remove_new_content($bar);
+});
+
+it('removes nothing when it is not given an admin bar', function (): void {
+    uamswp_auditor_role_as(true);
+    $bar = Mockery::mock();
+    $bar->shouldReceive('remove_node')->never();
+
+    AdminBar::remove_new_content($bar);
+});

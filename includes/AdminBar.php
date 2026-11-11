@@ -17,9 +17,13 @@ final class AdminBar
     /** The node ID. */
     public const NODE = 'uamswp-auditor-role-badge';
 
+    /** Core's "+ New" menu node, which core adds at priority 70. */
+    public const NEW_CONTENT = 'new-content';
+
     public static function boot(): void
     {
         add_action('admin_bar_menu', [self::class, 'add_badge'], 0);
+        add_action('admin_bar_menu', [self::class, 'remove_new_content'], PHP_INT_MAX);
         add_action('admin_enqueue_scripts', [self::class, 'add_style']);
         add_action('wp_enqueue_scripts', [self::class, 'add_style']);
     }
@@ -40,6 +44,21 @@ final class AdminBar
                 'title' => __('This account can view but not change anything. Changes are refused and recorded.', 'uamswp-auditor-role'),
             ],
         ]);
+    }
+
+    /**
+     * Take core's "+ New" menu out of the admin bar for an Auditor. Every entry
+     * in it opens a create screen whose first load inserts a row, which the
+     * guard refuses, so for the role it only leads to an error. Its children
+     * go with it: the admin bar skips a node whose parent is not registered.
+     */
+    public static function remove_new_content(mixed $bar): void
+    {
+        if (! $bar instanceof WP_Admin_Bar || ! Session::is_auditor()) {
+            return;
+        }
+
+        $bar->remove_node(self::NEW_CONTENT);
     }
 
     /**
