@@ -44,9 +44,10 @@ beforeEach(function (): void {
     Functions\when('sanitize_text_field')->returnArg();
 });
 
-it('hooks the menu and the dashboard last', function (): void {
+it('hooks the menu, the dashboard and the plugin bulk actions last', function (): void {
     Actions\expectAdded('admin_menu')->once()->with([Screens::class, 'remove_menu_entries'], PHP_INT_MAX);
     Actions\expectAdded('wp_dashboard_setup')->once()->with([Screens::class, 'remove_dashboard_writers'], PHP_INT_MAX);
+    Filters\expectAdded('bulk_actions-plugins')->once()->with([Screens::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
 
     Screens::boot();
 });
@@ -211,4 +212,16 @@ it('leaves the dashboard alone for another role', function (): void {
     Functions\expect('remove_meta_box')->never();
 
     Screens::remove_dashboard_writers();
+});
+
+it('offers an Auditor no bulk actions on the Plugins screen', function (): void {
+    uamswp_auditor_role_as(true, 'plugins.php');
+
+    expect(Screens::remove_plugin_bulk_actions(['activate-selected' => 'Activate', 'deactivate-selected' => 'Deactivate']))->toBe([]);
+});
+
+it('leaves the Plugins bulk actions alone for another role', function (): void {
+    uamswp_auditor_role_as(false, 'plugins.php');
+
+    expect(Screens::remove_plugin_bulk_actions(['activate-selected' => 'Activate']))->toBe(['activate-selected' => 'Activate']);
 });

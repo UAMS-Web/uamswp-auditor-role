@@ -56,13 +56,13 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 - **Refused statements fail quietly.** The `query` filter returns an empty statement, so wpdb returns false and the page renders. The refusal is logged with its table and, for options, the option name. Transients are refused like any other write; see `docs/WRITES-ON-LOAD.md`.
 - **The plugin's own writes go through `DatabaseGuard::bypass()`**, and the session token through a subclass of core's session manager, not through a table or meta-key allowlist in the filter, which a third-party write to the same table could ride.
 - **Fail closed.** The loader stub and the PHP floor guard strip every capability from an Auditor account when the plugin is not loaded, because the role persists in the database with `manage_options`.
-- **Plugins screen on multisite follows core.** Where the network has not enabled the Plugins menu for site administrators, the role cannot open it either; `wp auditor discover` and `wp auditor network-export` carry the plugin list.
+- **Plugins screen on multisite follows core.** Where the network has not enabled the Plugins menu for site administrators, the role cannot open it either; `wp auditor discover` and `wp auditor network-export` carry the plugin list. *Superseded on 2026-11-10: see "The Plugins screen past the network setting".*
 - **Dashboard widgets that write or summarize a hidden screen are removed** for the role (Quick Draft, WP Mail SMTP reports), through a filterable list.
 - **`wp-login.php` sign-in, password reset and a User Switching switch-back are not an Auditor session**, so a reset by email works and an administrator testing the role can switch back.
 
 **Why.** Each one either closes a gap the issue text left open or follows from testing the role against the uamshealth.com plugin set on a local multisite.
 
-**Rejected.** Allowing transients by default (the issue asks for refusal and a per-case decision). Granting the Plugins screen past the network setting (wider than a site administrator). An allowlist of usermeta keys for the session token (a window another write could pass through).
+**Rejected.** Allowing transients by default (the issue asks for refusal and a per-case decision). Granting the Plugins screen past the network setting (wider than a site administrator; adopted on 2026-11-10, see below). An allowlist of usermeta keys for the session token (a window another write could pass through).
 
 **Companion.** `docs/WRITES-ON-LOAD.md`, `docs/DEPLOY.md`, and the pull request for #3.
 
@@ -184,3 +184,15 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Why.** Reading another user's draft is part of an audit, and the role held no capability that allowed it.
 
 **Rejected.** Granting `edit_others_posts`, `edit_others_pages` and each custom post type's equivalents (it opens the post editor for every post, whose load writes the post lock and autosave, and needs every type's capabilities named per deployment). Checking the `WP_CLI` and `XMLRPC_REQUEST` constants as well (XML-RPC sign-in is already refused for the role, a WP-CLI run is server access with the database guard still in place, and a constant cannot be tested both ways in one process).
+
+## 2026-11-10 The Plugins screen past the network setting (area: capabilities)
+
+**Decision.**
+
+- **An Auditor can open the Plugins screen on a network that has not enabled the Plugins menu for site administrators.** For an Auditor's `activate_plugins` check, `MetaCaps::map()` drops the `manage_network_plugins` that core's `map_meta_cap()` adds for that network setting, so the check resolves to `activate_plugins`, which the role holds.
+- **The screen stays a list.** `activate_plugin`, `deactivate_plugin` and `deactivate_plugins` stay denied, and the `install_`, `update_` and `delete_` families stay never granted, so no row action shows. The bulk "Activate" and "Deactivate" options, which core adds without a capability check, are removed for the role through `bulk_actions-plugins`.
+- **Site administrators are unchanged**: the network setting still closes the screen to them.
+
+**Why.** An audit reads the plugin list, and `wp auditor discover` and `wp auditor network-export` give it only to someone with server access.
+
+**Rejected.** Keeping the earlier decision that the screen follows core (the list stays out of reach in the browser). Filtering the `menu_items` site option to add `plugins` in an Auditor session (it changes a network option's value for every reader in the request, not one capability check).

@@ -119,6 +119,17 @@ final class Screens
     {
         add_action('admin_menu', [self::class, 'remove_menu_entries'], PHP_INT_MAX);
         add_action('wp_dashboard_setup', [self::class, 'remove_dashboard_writers'], PHP_INT_MAX);
+        add_filter('bulk_actions-plugins', [self::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
+    }
+
+    /**
+     * Offer an Auditor no bulk actions on the Plugins screen. Core adds
+     * "Activate" and "Deactivate" there without a capability check of its own,
+     * and both submit a write the guard refuses.
+     */
+    public static function remove_plugin_bulk_actions(mixed $actions): mixed
+    {
+        return Session::is_auditor() ? [] : $actions;
     }
 
     /**
