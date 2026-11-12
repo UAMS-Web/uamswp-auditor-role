@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Print one site's walk inventory as JSON: its admin menu slugs and its
- * admin-ajax actions. Read-only.
+ * Print one site's walk inventory as JSON: its admin menu slugs, the hidden
+ * screens on the install (`Screens::hidden()`, after a deployment's filter; empty
+ * when the plugin is not loaded), and its admin-ajax actions. Read-only.
  *
  * Run as an administrator, in an admin context, once per site:
  *   wp --exec="define('WP_ADMIN', true);" eval-file tests/Walk/enumerate.php --use-include --user=<admin> --url=<site>
@@ -14,6 +15,7 @@
  */
 
 declare(strict_types=1);
+use UAMSWeb\AuditorRole\Screens;
 
 if (! defined('ABSPATH') || ! defined('WP_ADMIN')) {
     fwrite(STDERR, "Run through wp eval-file with --exec=\"define('WP_ADMIN', true);\".\n");
@@ -63,9 +65,12 @@ if (preg_match_all('/\$core_actions_(get|post)\s*=\s*array\((.*?)\);/s', $source
     }
 }
 
+$hidden = class_exists(Screens::class) ? Screens::hidden() : [];
+
 echo json_encode([
     'url' => home_url('/'),
     'admin_url' => admin_url(),
     'menu' => array_values(array_unique($slugs)),
+    'hidden' => $hidden,
     'ajax' => array_values(array_unique($ajax)),
 ], JSON_UNESCAPED_SLASHES), "\n";
