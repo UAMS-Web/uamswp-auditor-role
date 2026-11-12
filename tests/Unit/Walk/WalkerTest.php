@@ -25,7 +25,8 @@ function uamswp_auditor_role_walk_target(string $label, string $kind = 'screen')
 
 /**
  * A window over a log that grows by the events each fetched target writes.
- * A fetch answers with the body named for its label in $bodies, or an empty one.
+ * A fetch answers with the body named for its label in $bodies, or an empty one,
+ * and redirects the label `moved` to `https://example.org/elsewhere`.
  *
  * @param  array<string, list<array<string, string>>>  $writes  Label to the binlog events its request adds.
  * @param  list<string>  $calls
@@ -59,7 +60,7 @@ function uamswp_auditor_role_walk_walker(array $writes, array &$calls, ?array $a
             $log[] = $event;
         }
 
-        return ['status' => $target['kind'] === 'ajax' ? 403 : 200, 'body' => $bodies[$target['label']] ?? ''];
+        return ['status' => $target['kind'] === 'ajax' ? 403 : 200, 'body' => $bodies[$target['label']] ?? '', 'location' => $target['label'] === 'moved' ? 'https://example.org/elsewhere' : ''];
     };
 
     $settle = static function () use (&$calls): void {
@@ -138,8 +139,8 @@ it('walks nothing without targets', function (): void {
 });
 
 it('passes only a run that visited something and found no unexpected write', function (): void {
-    $clean = ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'unexpected' => []];
-    $dirty = ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 200, 'outcome' => 'none', 'unexpected' => [['table' => 'wp_options', 'kind' => 'row', 'info' => 'x']]];
+    $clean = ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'location' => '', 'unexpected' => []];
+    $dirty = ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 200, 'outcome' => 'none', 'location' => '', 'unexpected' => [['table' => 'wp_options', 'kind' => 'row', 'info' => 'x']]];
 
     expect(Report::passed([$clean]))->toBeTrue()
         ->and(Report::passed([$clean, $dirty]))->toBeFalse()
@@ -149,9 +150,9 @@ it('passes only a run that visited something and found no unexpected write', fun
 
 it('reports a passing run with its counts and statuses', function (): void {
     expect(Report::markdown([
-        ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'unexpected' => []],
-        ['target' => uamswp_auditor_role_walk_target('ajax:x', 'ajax'), 'status' => 403, 'outcome' => 'none', 'unexpected' => []],
-        ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 200, 'outcome' => 'none', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'location' => '', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('ajax:x', 'ajax'), 'status' => 403, 'outcome' => 'none', 'location' => '', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 200, 'outcome' => 'none', 'location' => '', 'unexpected' => []],
     ]))->toBe(implode("\n", [
         '# Screen walk',
         '',
@@ -168,11 +169,11 @@ it('reports a passing run with its counts and statuses', function (): void {
 
 it('names each unexpected write with the target that made it', function (): void {
     expect(Report::markdown([
-        ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 500, 'outcome' => 'none', 'unexpected' => [
+        ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 500, 'outcome' => 'none', 'location' => '', 'unexpected' => [
             ['table' => 'wp_options', 'kind' => 'row', 'info' => 'x'],
             ['table' => 'wp_x', 'kind' => 'statement', 'info' => 'y'],
         ]],
-        ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'location' => '', 'unexpected' => []],
     ]))->toBe(implode("\n", [
         '# Screen walk',
         '',
@@ -220,32 +221,34 @@ it('records what the plugin did with each request, from its response body', func
         uamswp_auditor_role_walk_target('hidden'),
         uamswp_auditor_role_walk_target('ajax:refused', 'ajax'),
         uamswp_auditor_role_walk_target('served'),
+        uamswp_auditor_role_walk_target('moved'),
     ]);
 
-    expect(array_column($results, 'outcome'))->toBe(['hidden', 'refused', 'none'])
-        ->and(array_keys($results[0]))->toBe(['target', 'status', 'outcome', 'unexpected']);
+    expect(array_column($results, 'outcome'))->toBe(['hidden', 'refused', 'none', 'none'])
+        ->and(array_column($results, 'location'))->toBe(['', '', '', 'https://example.org/elsewhere'])
+        ->and(array_keys($results[0]))->toBe(['target', 'status', 'outcome', 'location', 'unexpected']);
 });
 
 it('lists every target in the order visited, with its status, outcome and writes', function (): void {
     expect(Report::targets([
-        ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 403, 'outcome' => 'hidden', 'unexpected' => []],
-        ['target' => uamswp_auditor_role_walk_target('ajax:x | y', 'ajax'), 'status' => 403, 'outcome' => 'refused', 'unexpected' => []],
-        ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'unexpected' => [
+        ['target' => uamswp_auditor_role_walk_target('b'), 'status' => 403, 'outcome' => 'hidden', 'location' => '', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('ajax:x | y', 'ajax'), 'status' => 403, 'outcome' => 'refused', 'location' => '', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('a'), 'status' => 200, 'outcome' => 'none', 'location' => '', 'unexpected' => [
             ['table' => 'wp_options', 'kind' => 'row', 'info' => 'x'],
             ['table' => 'wp_x', 'kind' => 'row', 'info' => 'y'],
         ]],
-        ['target' => uamswp_auditor_role_walk_target('c'), 'status' => 302, 'outcome' => 'hidden', 'unexpected' => []],
+        ['target' => uamswp_auditor_role_walk_target('c'), 'status' => 302, 'outcome' => 'hidden', 'location' => 'https://example.org/a|b', 'unexpected' => []],
     ]))->toBe(implode("\n", [
         '## Every target',
         '',
         '4 targets, in the order visited (hidden 2, none 1, refused 1).',
         '',
-        '| # | Target | Status | Plugin | Unexpected writes |',
-        '| ---: | --- | ---: | --- | ---: |',
-        '| 1 | `b` | 403 | hidden | 0 |',
-        '| 2 | `ajax:x \| y` | 403 | refused | 0 |',
-        '| 3 | `a` | 200 | none | 2 |',
-        '| 4 | `c` | 302 | hidden | 0 |',
+        '| # | Target | Status | Plugin | Redirects to | Unexpected writes |',
+        '| ---: | --- | ---: | --- | --- | ---: |',
+        '| 1 | `b` | 403 | hidden |  | 0 |',
+        '| 2 | `ajax:x \| y` | 403 | refused |  | 0 |',
+        '| 3 | `a` | 200 | none |  | 2 |',
+        '| 4 | `c` | 302 | hidden | `https://example.org/a\|b` | 0 |',
     ])."\n");
 });
 
