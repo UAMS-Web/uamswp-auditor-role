@@ -127,12 +127,20 @@ final class MetaCaps
             return ['do_not_allow'];
         }
 
-        // On a network that has not enabled the Plugins menu for site
-        // administrators, core adds `manage_network_plugins` to this check.
-        // The role may still list plugins: every action on the screen checks a
-        // capability the role never passes (`activate_plugin`, `deactivate_plugin`,
-        // and the `install_`, `update_` and `delete_` families).
+        // The plugins check passes for an Auditor only on a site's Plugins
+        // screen, which it opens as a list: every action there checks a
+        // capability the role never passes (`activate_plugin`,
+        // `deactivate_plugin`, and the `install_`, `update_` and `delete_`
+        // families). On a network that has not enabled the Plugins menu for site
+        // administrators, core adds `manage_network_plugins` to the check, which
+        // is dropped. Elsewhere plugins read `activate_plugins` as "may act on
+        // plugins", and an activation redirect keyed on it catches an Auditor on
+        // every screen, so it is denied there. Screens keeps the menu entry.
         if ($cap === 'activate_plugins') {
+            if (! self::on_plugins_screen()) {
+                return ['do_not_allow'];
+            }
+
             $caps = array_values(array_diff($caps, ['manage_network_plugins']));
         }
 
@@ -143,5 +151,13 @@ final class MetaCaps
         }
 
         return $caps;
+    }
+
+    /**
+     * Whether the request is a site's Plugins screen, not the network's.
+     */
+    private static function on_plugins_screen(): bool
+    {
+        return Session::script() === 'plugins.php' && ! is_network_admin();
     }
 }

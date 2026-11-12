@@ -189,10 +189,21 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Decision.**
 
-- **An Auditor can open the Plugins screen on a network that has not enabled the Plugins menu for site administrators.** For an Auditor's `activate_plugins` check, `MetaCaps::map()` drops the `manage_network_plugins` that core's `map_meta_cap()` adds for that network setting, so the check resolves to `activate_plugins`, which the role holds.
+- **An Auditor can open the Plugins screen on a network that has not enabled the Plugins menu for site administrators.** For an Auditor's `activate_plugins` check, `MetaCaps::map()` drops the `manage_network_plugins` that core's `map_meta_cap()` adds for that network setting, so the check resolves to `activate_plugins`, which the role holds. *Narrowed on 2026-11-12: the check passes only on the site's Plugins screen; see "The plugins check off the Plugins screen".*
 - **The screen stays a list.** `activate_plugin`, `deactivate_plugin` and `deactivate_plugins` stay denied, and the `install_`, `update_` and `delete_` families stay never granted, so no row action shows. The bulk "Activate" and "Deactivate" options, which core adds without a capability check, are removed for the role through `bulk_actions-plugins`. Network-active plugins, and inactive network-only ones, are listed for the role through `show_network_active_plugins`; core labels each "Network Active" or "Network Only" in place of its actions and gives it no bulk checkbox.
 - **Site administrators are unchanged**: the network setting still closes the screen to them.
 
 **Why.** An audit reads the plugin list, and `wp auditor discover` and `wp auditor network-export` give it only to someone with server access.
 
 **Rejected.** Keeping the earlier decision that the screen follows core (the list stays out of reach in the browser). Filtering the `menu_items` site option to add `plugins` in an Auditor session (it changes a network option's value for every reader in the request, not one capability check).
+
+## 2026-11-12 The plugins check off the Plugins screen (area: capabilities)
+
+**Decision.**
+
+- **An Auditor passes the `activate_plugins` check only on a site's Plugins screen** (`plugins.php`, not the network admin's), where `manage_network_plugins` is still dropped from it. On every other request the check is denied, on a single site and on a network with the Plugins menu enabled for site administrators as well, where the role's own `activate_plugins` had passed it everywhere since the role was built.
+- **Core's Plugins menu entry, and its Installed Plugins submenu entry, ask for `read` in an Auditor session**, so the entry shows on every screen and opens `plugins.php`, where the check passes.
+
+**Why.** Plugins read `activate_plugins` as "may act on plugins". WP Mail SMTP redirects such a user to its setup wizard while its activation flag is set, and deletes the flag first; the Auditor's delete is refused, so every main-site admin request redirected, and the screen walk loaded none of 38 screens (#84). A flag kept in an option with no expiry would redirect the Auditor until an administrator loaded an admin screen.
+
+**Rejected.** Keeping the check true everywhere and making known activation-redirect flags read as unset for an Auditor (each plugin with the pattern needs its own entry, and an unknown one is found only when it redirects). Leaving the role as it is and making the screen walk wait out the redirect (the defect stays for a flag with no expiry, and the walk stops showing it).
