@@ -56,6 +56,8 @@ final class Screens
             'page:wp-mail-smtp-logs',
             'page:wp-mail-smtp-reports',
             'page:wp-mail-smtp-tools',
+            // WP Mail SMTP's setup wizard, which takes the mailer's credentials and saves them.
+            'page:wp-mail-smtp-setup-wizard',
             'page:formidable-smtp',
             // Form entries, form settings with API and reCAPTCHA keys, and form exports.
             'page:gf_entries',

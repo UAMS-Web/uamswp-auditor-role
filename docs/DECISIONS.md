@@ -212,8 +212,8 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Decision.**
 
-- **Listed activation-redirect flags read as `false` in an Auditor session** (`ActivationFlags`), through the `option_<name>` and `transient_<name>` filters, hooked late on `init`. The default list is SEOPress's `seopress_activated` option, and `uamswp_auditor_role_activation_flags` adds `option:<name>` or `transient:<name>` entries but cannot drop a default. Nothing is written, so the next administrator is still redirected.
-- **SEOPress's setup wizard (`page:seopress-setup`) is a hidden screen.** It saves SEOPress's settings.
+- **Listed activation-redirect flags read as `false` in an Auditor session** (`ActivationFlags`), through the `option_<name>` and `transient_<name>` filters, hooked late on `init`. The default list is SEOPress's `seopress_activated` option and WP Mail SMTP's `wp_mail_smtp_activation_redirect` transient (its redirect is keyed on `activate_plugins`, which an Auditor passes on the Plugins screen), and `uamswp_auditor_role_activation_flags` adds `option:<name>` or `transient:<name>` entries but cannot drop a default. Nothing is written, so the next administrator is still redirected.
+- **SEOPress's and WP Mail SMTP's setup wizards (`page:seopress-setup`, `page:wp-mail-smtp-setup-wizard`) are hidden screens.** Each saves its plugin's settings, and WP Mail SMTP's takes the mailer's credentials.
 
 **Why.** SEOPress redirects a user who can `manage_options` to its wizard while the option is `yes`, and deletes the option first. The role holds `manage_options` so settings screens can be read, and its delete is refused, so the redirect repeated on every admin screen until an administrator loaded one (#87). On the CI walk it sent all 38 of the main site's ordinary screens to the wizard.
 

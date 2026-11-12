@@ -34,6 +34,9 @@ final class ActivationFlags
             // SEOPress: redirects a user who can `manage_options` to its setup
             // wizard while this option is `yes` (seopress_redirect_after_activation()).
             'option:seopress_activated',
+            // WP Mail SMTP: redirects a user who can `activate_plugins` (an Auditor on
+            // the Plugins screen) to its setup wizard while this transient is set.
+            'transient:wp_mail_smtp_activation_redirect',
         ];
     }
 
