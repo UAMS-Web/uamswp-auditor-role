@@ -136,6 +136,8 @@ final class Screens
             'page:seopress-schemas',
             'page:seopress-redirections',
             'page:seopress-broken-links',
+            // SEOPress's setup wizard, which saves its settings.
+            'page:seopress-setup',
             'edit.php?post_type=seopress_404',
             'edit.php?post_type=seopress_bot',
             'edit.php?post_type=seopress_schemas',

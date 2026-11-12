@@ -207,3 +207,14 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 **Why.** Plugins read `activate_plugins` as "may act on plugins". WP Mail SMTP redirects such a user to its setup wizard while its activation flag is set, and deletes the flag first; the Auditor's delete is refused, so every main-site admin request redirected, and the screen walk loaded none of 38 screens (#84). A flag kept in an option with no expiry would redirect the Auditor until an administrator loaded an admin screen.
 
 **Rejected.** Keeping the check true everywhere and making known activation-redirect flags read as unset for an Auditor (each plugin with the pattern needs its own entry, and an unknown one is found only when it redirects). Leaving the role as it is and making the screen walk wait out the redirect (the defect stays for a flag with no expiry, and the walk stops showing it).
+
+## 2026-11-12 Plugin activation redirects keyed on a capability the role holds (area: third-party plugins)
+
+**Decision.**
+
+- **Listed activation-redirect flags read as `false` in an Auditor session** (`ActivationFlags`), through the `option_<name>` and `transient_<name>` filters, hooked late on `init`. The default list is SEOPress's `seopress_activated` option, and `uamswp_auditor_role_activation_flags` adds `option:<name>` or `transient:<name>` entries but cannot drop a default. Nothing is written, so the next administrator is still redirected.
+- **SEOPress's setup wizard (`page:seopress-setup`) is a hidden screen.** It saves SEOPress's settings.
+
+**Why.** SEOPress redirects a user who can `manage_options` to its wizard while the option is `yes`, and deletes the option first. The role holds `manage_options` so settings screens can be read, and its delete is refused, so the redirect repeated on every admin screen until an administrator loaded one (#87). On the CI walk it sent all 38 of the main site's ordinary screens to the wizard.
+
+**Rejected.** Cancelling any redirect a plugin issues during `admin_init` on an Auditor's screen view (it reaches unknown plugins too, but cancels legitimate redirects with them). Taking SEOPress out of the CI walk (the defect stays on a real install).

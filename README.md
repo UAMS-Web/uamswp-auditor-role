@@ -29,6 +29,7 @@ The compensating controls: an activity log per site (`Log`), an administrator-on
 | `uamswp_auditor_role_denied_caps` | Adds capabilities denied to the role. |
 | `uamswp_auditor_role_hidden_screens` | The hidden screens: `page:<slug>` or `<script>.php[?param=value]`. |
 | `uamswp_auditor_role_hidden_dashboard_widgets` | Dashboard widgets removed for the role. |
+| `uamswp_auditor_role_activation_flags` | Adds plugin activation-redirect flags that read as unset for the role: `option:<name>` or `transient:<name>`. |
 | `uamswp_auditor_role_ajax_actions` | The allowlisted AJAX actions. Add one only after reading what it does. |
 | `uamswp_auditor_role_get_actions` | The `action` values an admin GET may carry. |
 | `uamswp_auditor_role_allow_query` | Lets one refused statement through; see [`docs/WRITES-ON-LOAD.md`](docs/WRITES-ON-LOAD.md). |

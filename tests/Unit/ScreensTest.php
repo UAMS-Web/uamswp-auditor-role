@@ -37,7 +37,7 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'edit-tags.php?taxonomy=acf-field-group-category', 'page:acf-tools', 'page:acfe-settings',
     'page:asp_main_settings', 'page:asp_index_table', 'page:asp_priorities', 'page:asp_statistics', 'page:asp_analytics', 'page:asp_cache_settings', 'page:asp_performance', 'page:asp_compatibility_settings', 'page:asp_maintenance',
     'page:ef-settings', 'page:ef-calendar-settings', 'page:ef-custom-status-settings', 'page:ef-dashboard-settings', 'page:ef-editorial-comments-settings', 'page:ef-editorial-metadata-settings', 'page:ef-notifications-settings', 'page:ef-story-budget-settings', 'page:ef-user-groups-settings',
-    'page:seopress-option', 'page:seopress-titles', 'page:seopress-xml-sitemap', 'page:seopress-social', 'page:seopress-instant-indexing', 'page:seopress-advanced', 'page:seopress-import-export', 'page:seopress-pro-page', 'page:seopress-schemas', 'page:seopress-redirections', 'page:seopress-broken-links',
+    'page:seopress-option', 'page:seopress-titles', 'page:seopress-xml-sitemap', 'page:seopress-social', 'page:seopress-instant-indexing', 'page:seopress-advanced', 'page:seopress-import-export', 'page:seopress-pro-page', 'page:seopress-schemas', 'page:seopress-redirections', 'page:seopress-broken-links', 'page:seopress-setup',
     'edit.php?post_type=seopress_404', 'edit.php?post_type=seopress_bot', 'edit.php?post_type=seopress_schemas',
     'page:genesis', 'page:genesis-import-export', 'page:seo-settings', 'page:genesis-getting-started', 'page:genesis-cpt-archive-*',
     'page:uamswp-settings', 'page:uams-search-site',
