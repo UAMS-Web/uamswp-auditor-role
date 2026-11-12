@@ -4,7 +4,7 @@ Tags: audit, roles, read-only
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.2.2
+Stable tag: 0.3.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -21,6 +21,15 @@ A must-use plugin that registers a read-only `Auditor` role. A default-deny guar
 3. Check the files against the release's `.sha256` list. See `docs/DEPLOY.md` in the repository.
 
 == Changelog ==
+
+= 0.3.0 =
+* Added: more screens are hidden from an Auditor: Settings > Connectors, the Customizer, the Site Editor and Fonts, Comments, ACF, Better Image Sizes, Regenerate Thumbnails, and the settings of Ajax Search Pro, Edit Flow, SEOPress, Genesis, UAMS Settings, WP Accessibility, Media Library Assistant, and the SEOPress and WP Mail SMTP setup wizards. A hidden-screen entry may end in `*` to match every page slug with that prefix.
+* Added: an Auditor can open the Plugins screen as a read-only list, network-active plugins included, view drafts of every post type on the front end, open list-screen previews and post-title links, and read the Find-a-Doc provider and location lists.
+* Added: the `uamswp_auditor_role_activation_flags` filter, for plugin activation-redirect flags that read as unset for the role.
+* Changed: the admin bar drops the "+ New", FacetWP Cache and comment-count menus for an Auditor.
+* Fixed: a plugin's post-activation redirect no longer repeats on every screen for an Auditor, who cannot clear its flag. The `activate_plugins` check passes for the role only on a site's Plugins screen, and SEOPress's and WP Mail SMTP's flags read as unset.
+* Fixed: ShortPixel's background processor no longer runs in an Auditor session.
+* The screen walk records every target with its status, outcome and redirect, walks the hidden screens that have no menu item, and uploads its report from CI.
 
 = 0.2.2 =
 * Security: while regular plugins load, before a login cookie can be validated, a cookie that names an Auditor of the site now refuses database writes. A plugin that wrote as it loaded passed before, and the request's later checks treated it as no Auditor session until WordPress set the current user.
