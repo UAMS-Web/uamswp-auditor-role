@@ -1,6 +1,6 @@
 # Screen walk
 
-The screen walk is the evidence that the guard holds against a real plugin set. It signs in as an Auditor, visits every admin menu slug of every site and every `admin-ajax.php` action, and fails on any database write other than the plugin's own activity log. Run it on a copy of an install before the plugin goes to that install's servers.
+The screen walk is the evidence that the guard holds against a real plugin set. It signs in as an Auditor, visits every admin menu slug and every hidden script screen of every site and every `admin-ajax.php` action, and fails on any database write other than the plugin's own activity log. Run it on a copy of an install before the plugin goes to that install's servers.
 
 ## How it sees writes
 
@@ -11,6 +11,7 @@ Before it walks, it proves the instrument works. It checks that the binary log i
 ## What it visits
 
 - **Every admin menu slug on every site**, top-level and submenu, as a super admin sees them, so screens an Auditor cannot open are visited too and must still write nothing. A slug that names a script opens it (`edit.php?post_type=page`); any other slug opens as `admin.php?page=<slug>`.
+- **Every script entry of the hidden-screen list on every site** (`Screens::hidden()`, after a deployment's filter) that the menu did not already give, such as `customize.php` under a block theme, which has no Customize menu item. A `page:` entry is left out: a page no plugin registered gets core's refusal, which says nothing about the guard.
 - **Every admin-ajax action once**, on the first site that registers it: each `wp_ajax_` hook registered when the admin loads, plus core's own action lists in `wp-admin/admin-ajax.php`. Each is sent as a POST with no nonce.
 
 `tests/Walk/enumerate.php` builds each site's list; `tests/Walk/walk.php` runs everything.

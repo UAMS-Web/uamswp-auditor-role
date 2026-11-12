@@ -1,8 +1,8 @@
 <?php
 
 /**
- * The screen walk (#19): sign in as an Auditor, visit every admin menu slug of
- * every site and every admin-ajax action once, and fail on any database write
+ * The screen walk (#19): sign in as an Auditor, visit every admin menu slug and
+ * hidden script screen of every site and every admin-ajax action once, and fail on any database write
  * other than the plugin's own activity log.
  *
  * Writes are read from MySQL's binary log, outside WordPress, so a write that
