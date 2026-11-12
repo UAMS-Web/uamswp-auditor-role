@@ -149,9 +149,10 @@ $curl = static function (string $url, string $method, array $body) use ($jar, $i
 
     $response = curl_exec($handle);
     $status = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+    $location = curl_getinfo($handle, CURLINFO_REDIRECT_URL);
     curl_close($handle);
 
-    return ['status' => $status, 'body' => is_string($response) ? $response : ''];
+    return ['status' => $status, 'body' => is_string($response) ? $response : '', 'location' => is_string($location) ? $location : ''];
 };
 
 $login_path = is_string($options['login-path'] ?? null) ? $options['login-path'] : '/wp-login.php';

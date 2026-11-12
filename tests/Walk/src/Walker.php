@@ -13,7 +13,7 @@ namespace UAMSWeb\AuditorRole\Walk;
 final readonly class Walker
 {
     /**
-     * @param  \Closure(array{kind: string, label: string, url: string, method: string, body: array<string, string>}): array{status: int, body: string}  $fetch  Makes the request, returns its HTTP status and response body.
+     * @param  \Closure(array{kind: string, label: string, url: string, method: string, body: array<string, string>}): array{status: int, body: string, location: string}  $fetch  Makes the request, returns its HTTP status, response body and redirect target (empty when none).
      * @param  \Closure(): void  $settle  Waits for writes a response leaves behind.
      * @param  list<string>|null  $allowed  Patterns for tables a request may write; null for the default.
      */
@@ -52,8 +52,8 @@ final readonly class Walker
      * Visit each target and record what it wrote.
      *
      * @param  list<array{kind: string, label: string, url: string, method: string, body: array<string, string>}>  $targets
-     * @param  (\Closure(int, int, array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, unexpected: list<array{table: string, kind: string, info: string}>}): void)|null  $progress
-     * @return list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, unexpected: list<array{table: string, kind: string, info: string}>}>
+     * @param  (\Closure(int, int, array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, location: string, unexpected: list<array{table: string, kind: string, info: string}>}): void)|null  $progress
+     * @return list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, location: string, unexpected: list<array{table: string, kind: string, info: string}>}>
      */
     public function walk(array $targets, ?\Closure $progress = null): array
     {
@@ -73,7 +73,7 @@ final readonly class Walker
                 }
             }
 
-            $result = ['target' => $target, 'status' => $response['status'], 'outcome' => Outcome::of($response['body']), 'unexpected' => $unexpected];
+            $result = ['target' => $target, 'status' => $response['status'], 'outcome' => Outcome::of($response['body']), 'location' => $response['location'], 'unexpected' => $unexpected];
             $results[] = $result;
 
             if ($progress instanceof \Closure) {

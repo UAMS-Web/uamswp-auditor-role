@@ -55,6 +55,7 @@ beforeEach(function (): void {
 
 it('hooks the menu, the dashboard and the Plugins screen filters last', function (): void {
     Actions\expectAdded('admin_menu')->once()->with([Screens::class, 'remove_menu_entries'], PHP_INT_MAX);
+    Actions\expectAdded('admin_menu')->once()->with([Screens::class, 'open_plugins_menu'], PHP_INT_MAX);
     Actions\expectAdded('wp_dashboard_setup')->once()->with([Screens::class, 'remove_dashboard_writers'], PHP_INT_MAX);
     Filters\expectAdded('bulk_actions-plugins')->once()->with([Screens::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
     Filters\expectAdded('show_network_active_plugins')->once()->with([Screens::class, 'show_network_active_plugins'], PHP_INT_MAX);
@@ -261,4 +262,55 @@ it('leaves the network-active answer alone for another role', function (mixed $s
     'hidden' => [false],
     'shown' => [true],
     'not a boolean' => [null],
+]);
+
+it('files core\'s Plugins menu entries under read for an Auditor, and nothing else', function (): void {
+    uamswp_auditor_role_as(true);
+    $GLOBALS['menu'] = [
+        60 => ['Appearance', 'switch_themes', 'themes.php'],
+        65 => ['Plugins', 'activate_plugins', 'plugins.php'],
+        66 => ['Other', 'activate_plugins', 'other.php'],
+        67 => 'not an item',
+    ];
+    $GLOBALS['submenu'] = [
+        'plugins.php' => [
+            5 => ['Installed Plugins', 'activate_plugins', 'plugins.php'],
+            10 => ['Add Plugin', 'install_plugins', 'plugin-install.php'],
+            12 => ['Settings', 'manage_options', 'plugins.php'],
+        ],
+        'tools.php' => [5 => ['Tools', 'activate_plugins', 'plugins.php']],
+    ];
+
+    Screens::open_plugins_menu();
+
+    expect(array_column(array_filter($GLOBALS['menu'], is_array(...)), 1))->toBe(['switch_themes', 'read', 'activate_plugins'])
+        ->and($GLOBALS['menu'][67])->toBe('not an item')
+        ->and(array_column($GLOBALS['submenu']['plugins.php'], 1))->toBe(['read', 'install_plugins', 'manage_options'])
+        ->and($GLOBALS['submenu']['tools.php'][5][1])->toBe('activate_plugins');
+});
+
+it('leaves the Plugins menu entries alone for another role', function (): void {
+    uamswp_auditor_role_as(false);
+    $GLOBALS['menu'] = [65 => ['Plugins', 'activate_plugins', 'plugins.php']];
+    $GLOBALS['submenu'] = ['plugins.php' => [5 => ['Installed Plugins', 'activate_plugins', 'plugins.php']]];
+
+    Screens::open_plugins_menu();
+
+    expect($GLOBALS['menu'][65][1])->toBe('activate_plugins')
+        ->and($GLOBALS['submenu']['plugins.php'][5][1])->toBe('activate_plugins');
+});
+
+it('opens the Plugins menu with no submenu, and with none at all', function (mixed $submenu): void {
+    uamswp_auditor_role_as(true);
+    $GLOBALS['menu'] = [65 => ['Plugins', 'activate_plugins', 'plugins.php']];
+    $GLOBALS['submenu'] = $submenu;
+
+    Screens::open_plugins_menu();
+
+    expect($GLOBALS['menu'][65][1])->toBe('read')
+        ->and($GLOBALS['submenu'])->toBe($submenu);
+})->with([
+    'no menus' => [null],
+    'no Plugins submenu' => [['tools.php' => []]],
+    'a Plugins submenu that is not a list' => [['plugins.php' => 'x']],
 ]);

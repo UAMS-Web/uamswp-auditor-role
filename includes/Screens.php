@@ -176,6 +176,7 @@ final class Screens
     public static function boot(): void
     {
         add_action('admin_menu', [self::class, 'remove_menu_entries'], PHP_INT_MAX);
+        add_action('admin_menu', [self::class, 'open_plugins_menu'], PHP_INT_MAX);
         add_action('wp_dashboard_setup', [self::class, 'remove_dashboard_writers'], PHP_INT_MAX);
         add_filter('bulk_actions-plugins', [self::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
         add_filter('show_network_active_plugins', [self::class, 'show_network_active_plugins'], PHP_INT_MAX);
@@ -357,6 +358,47 @@ final class Screens
                 }
             }
         }
+    }
+
+    /**
+     * Keep core's Plugins menu entry for an Auditor on every screen. Core files
+     * it under `activate_plugins`, which MetaCaps passes for an Auditor only on
+     * the Plugins screen, so the entry asks for `read` instead. The screen
+     * itself still checks `activate_plugins`. WordPress keeps the capability at
+     * index 1 and the slug at index 2, and drops the entries a user cannot open
+     * after `admin_menu`.
+     */
+    public static function open_plugins_menu(): void
+    {
+        global $menu, $submenu;
+
+        if (! Session::is_auditor()) {
+            return;
+        }
+
+        if (is_array($menu)) {
+            foreach ($menu as $index => $item) {
+                if (self::is_core_plugins_item($item)) {
+                    $menu[$index][1] = 'read';
+                }
+            }
+        }
+
+        if (is_array($submenu) && is_array($submenu['plugins.php'] ?? null)) {
+            foreach ($submenu['plugins.php'] as $index => $item) {
+                if (self::is_core_plugins_item($item)) {
+                    $submenu['plugins.php'][$index][1] = 'read';
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether a menu or submenu item is core's entry for the Plugins screen.
+     */
+    private static function is_core_plugins_item(mixed $item): bool
+    {
+        return is_array($item) && ($item[1] ?? null) === 'activate_plugins' && ($item[2] ?? null) === 'plugins.php';
     }
 
     /**
