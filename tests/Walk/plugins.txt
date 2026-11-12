@@ -2,10 +2,15 @@
 # wordpress.org slug per line. A deployment walks its own set by installing it
 # and running tests/Walk/walk.php against that install (docs/WALK.md). Each
 # must support the WordPress version CI's walk installs (WP_VERSION in ci.yml).
+better-image-sizes
 classic-editor
+edit-flow
+media-library-assistant
 redirection
 regenerate-thumbnails
 tablepress
 user-switching
+wp-accessibility
 wp-crontrol
 wp-mail-smtp
+wp-seopress

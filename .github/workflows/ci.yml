@@ -252,6 +252,16 @@ jobs:
             --db-host=127.0.0.1 --db-user=root --db-name=walk --report=walk.md --settle-ms=100
           cat walk.md >> "$GITHUB_STEP_SUMMARY"
 
+      # Every target with its result, for a run searched for one screen; the job
+      # summary above carries the same list.
+      - name: Keep the walk report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screen-walk-report
+          path: walk.md
+          if-no-files-found: warn
+
       # The control: a must-use plugin that writes through its own connection
       # on every admin request by an Auditor. The walk must fail and name it.
       - name: A planted write fails the walk

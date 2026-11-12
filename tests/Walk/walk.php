@@ -129,7 +129,7 @@ fwrite(STDERR, sprintf("Inventoried %d site(s): %d target(s).\n", count($sites),
 $jar = tempnam(sys_get_temp_dir(), 'uamswp-walk-');
 $home = rtrim((string) ($inventories[0]['url'] ?? ''), '/');
 
-$curl = static function (string $url, string $method, array $body) use ($jar, $insecure): int {
+$curl = static function (string $url, string $method, array $body) use ($jar, $insecure): array {
     $handle = curl_init($url);
     curl_setopt_array($handle, [
         CURLOPT_RETURNTRANSFER => true,
@@ -147,11 +147,11 @@ $curl = static function (string $url, string $method, array $body) use ($jar, $i
         curl_setopt($handle, CURLOPT_POSTFIELDS, http_build_query($body));
     }
 
-    curl_exec($handle);
+    $response = curl_exec($handle);
     $status = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
     curl_close($handle);
 
-    return $status;
+    return ['status' => $status, 'body' => is_string($response) ? $response : ''];
 };
 
 $login_path = is_string($options['login-path'] ?? null) ? $options['login-path'] : '/wp-login.php';
@@ -166,7 +166,7 @@ $site_window = new BinlogWindow($query, $need('db-name'));
 
 $walker = new Walker(
     $site_window,
-    static fn (array $target): int => $curl($target['url'], $target['method'], $target['body']),
+    static fn (array $target): array => $curl($target['url'], $target['method'], $target['body']),
     static function () use ($settle): void {
         usleep($settle * 1000);
     },
@@ -181,8 +181,9 @@ $results = $walker->walk($targets, static function (int $done, int $total, array
 $markdown = Report::markdown($results);
 $report = $options['report'] ?? null;
 
+// The file also lists every target; the console keeps the summary only.
 if (is_string($report) && $report !== '') {
-    file_put_contents($report, $markdown);
+    file_put_contents($report, $markdown."\n".Report::targets($results));
 }
 
 echo $markdown;
