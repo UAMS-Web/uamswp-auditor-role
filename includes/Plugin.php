@@ -39,6 +39,7 @@ final class Plugin
         Acf::boot();
         Previews::boot();
         ListLinks::boot();
+        ActivationFlags::boot();
 
         add_action('init', [Role::class, 'maybe_register'], 0);
         add_action('init', [self::class, 'load_textdomain']);

@@ -17,6 +17,7 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use UAMSWeb\AuditorRole\Account;
 use UAMSWeb\AuditorRole\Acf;
+use UAMSWeb\AuditorRole\ActivationFlags;
 use UAMSWeb\AuditorRole\AdminBar;
 use UAMSWeb\AuditorRole\BetterImageSizes;
 use UAMSWeb\AuditorRole\Cli\AuditorCommand;
@@ -81,6 +82,7 @@ it('boots every layer and registers the role and the translations on init', func
         ->and(has_filter('post_row_actions', [ListLinks::class, 'row_actions']))->toBe(PHP_INT_MAX)
         ->and(has_filter('page_row_actions', [ListLinks::class, 'row_actions']))->toBe(PHP_INT_MAX)
         ->and(has_action('admin_footer-edit.php', [ListLinks::class, 'print_title_script']))->toBe(10)
+        ->and(has_action('init', [ActivationFlags::class, 'register']))->toBe(PHP_INT_MAX)
         ->and(has_action('init', [Role::class, 'maybe_register']))->toBe(0)
         ->and(has_action('init', [Plugin::class, 'load_textdomain']))->toBe(10);
 });
