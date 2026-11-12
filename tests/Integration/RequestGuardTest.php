@@ -139,6 +139,31 @@ final class RequestGuardTest extends IntegrationTestCase
         $this->assertFalse(wp_get_post_autosave($this->post, $this->auditor));
     }
 
+    public function test_an_auditor_rest_put_patch_and_delete_are_refused(): void
+    {
+        wp_set_current_user($this->auditor);
+
+        foreach (['PUT', 'PATCH', 'DELETE'] as $method) {
+            $request = new WP_REST_Request($method, "/wp/v2/posts/{$this->post}");
+            $request->set_body_params(['title' => 'Changed']);
+            $response = rest_do_request($request);
+
+            $this->assertSame(403, $response->get_status(), $method);
+            $this->assertSame('uamswp_auditor_role_read_only', $response->get_data()['code'], $method);
+        }
+
+        $this->assertSame('Before', get_the_title($this->post));
+        $this->assertSame('publish', get_post_status($this->post));
+    }
+
+    public function test_an_administrator_rest_delete_is_unaffected(): void
+    {
+        wp_set_current_user($this->admin);
+
+        $this->assertSame(200, rest_do_request(new WP_REST_Request('DELETE', "/wp/v2/posts/{$this->post}"))->get_status());
+        $this->assertSame('trash', get_post_status($this->post));
+    }
+
     public function test_an_administrator_rest_post_save_is_unaffected(): void
     {
         wp_set_current_user($this->admin);
