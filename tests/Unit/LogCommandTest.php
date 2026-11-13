@@ -69,7 +69,7 @@ function uamswp_auditor_role_g3_formatted(): array
     $call = uamswp_auditor_role_g3_formatted_calls()[0];
 
     $rows = array_map(
-        static fn (mixed $row): array => uamswp_auditor_role_string_map($row),
+        uamswp_auditor_role_string_map(...),
         array_values(uamswp_auditor_role_array($call[1])),
     );
 
