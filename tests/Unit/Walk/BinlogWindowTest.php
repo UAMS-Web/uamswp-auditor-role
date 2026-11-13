@@ -11,6 +11,25 @@ declare(strict_types=1);
 use UAMSWeb\AuditorRole\Walk\BinlogWindow;
 
 /**
+ * A dataset's answers, typed for the server: every statement a string, every answer a list of keyed rows or an exception.
+ *
+ * @param  array<array-key, mixed>  $answers
+ * @return array<string, list<array<string, mixed>>|RuntimeException>
+ */
+function uamswp_auditor_role_walk_answers(array $answers): array
+{
+    $typed = [];
+
+    foreach ($answers as $sql => $answer) {
+        $typed[uamswp_auditor_role_string($sql)] = $answer instanceof RuntimeException
+            ? $answer
+            : array_map(uamswp_auditor_role_string_keyed(...), array_values(uamswp_auditor_role_array($answer)));
+    }
+
+    return $typed;
+}
+
+/**
  * A server that answers each statement from a map, and records what it was asked.
  *
  * @param  array<string, list<array<string, mixed>>|RuntimeException>  $answers
@@ -46,7 +65,7 @@ it('accepts a binary log in row format', function (): void {
 
 it('refuses a server whose log cannot show a write', function (array $row, string $message): void {
     $asked = [];
-    $window = new BinlogWindow(uamswp_auditor_role_walk_server(['SELECT @@log_bin AS log_bin, @@binlog_format AS format' => [$row]], $asked), 'site');
+    $window = new BinlogWindow(uamswp_auditor_role_walk_server(['SELECT @@log_bin AS log_bin, @@binlog_format AS format' => [uamswp_auditor_role_string_keyed($row)]], $asked), 'site');
 
     if ($message === '') {
         $window->verify_settings();
@@ -94,7 +113,7 @@ it('reads a position the server returns as a number, and none as zero', function
 
 it('fails when the server reports no position', function (array $answers): void {
     $asked = [];
-    $window = new BinlogWindow(uamswp_auditor_role_walk_server($answers, $asked), 'site');
+    $window = new BinlogWindow(uamswp_auditor_role_walk_server(uamswp_auditor_role_walk_answers($answers), $asked), 'site');
 
     expect(fn (): array => $window->position())->toThrow(RuntimeException::class, 'no binary log position');
 })->with([

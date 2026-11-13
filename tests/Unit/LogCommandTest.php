@@ -69,7 +69,7 @@ function uamswp_auditor_role_g3_formatted(): array
     $call = uamswp_auditor_role_g3_formatted_calls()[0];
 
     $rows = array_map(
-        static fn (mixed $row): array => array_map(uamswp_auditor_role_text(...), uamswp_auditor_role_array($row)),
+        static fn (mixed $row): array => uamswp_auditor_role_string_map($row),
         array_values(uamswp_auditor_role_array($call[1])),
     );
 
@@ -129,7 +129,7 @@ it('refuses a filter it cannot read, before reading the log', function (array $a
     Functions\when('get_user_by')->justReturn(false);
     Functions\when('get_userdata')->justReturn(false);
 
-    expect(uamswp_auditor_role_g3_run(new LogCommand, 'list', $assoc))->toBe($error)
+    expect(uamswp_auditor_role_g3_run(new LogCommand, 'list', uamswp_auditor_role_string_map($assoc)))->toBe($error)
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe([]);
 })->with([
     'unknown login' => [['auditor' => 'nobody'], 'No such auditor: nobody'],

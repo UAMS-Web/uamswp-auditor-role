@@ -100,7 +100,7 @@ it('hooks each check where it must run, with its argument count', function (): v
 });
 
 it('decides each request', function (string $script, string $method, array $params, bool $admin, ?string $reason): void {
-    expect(RequestGuard::reason($script, $method, $params, $admin))->toBe($reason);
+    expect(RequestGuard::reason($script, $method, uamswp_auditor_role_string_keyed($params), $admin))->toBe($reason);
 })->with([
     'admin screen' => ['edit.php', 'GET', [], true, null],
     'admin HEAD' => ['edit.php', 'HEAD', [], true, null],
@@ -228,6 +228,27 @@ it('refuses a REST write after a method override, with a 403', function (): void
         ->and(uamswp_auditor_role_instance($result, WP_Error::class)->get_error_code())->toBe('uamswp_auditor_role_read_only')
         ->and(uamswp_auditor_role_instance($result, WP_Error::class)->get_error_data())->toBe(['status' => 403])
         ->and(RequestGuard::refusal())->toBe('rest:DELETE /wp/v2/posts/1');
+});
+
+it('refuses a REST write whose method and route are not text, naming neither', function (): void {
+    uamswp_auditor_role_as(true);
+    Functions\when('__')->returnArg();
+
+    $request = new class
+    {
+        public function get_method(): mixed
+        {
+            return null;
+        }
+
+        public function get_route(): mixed
+        {
+            return 5;
+        }
+    };
+
+    expect(RequestGuard::rest_pre_dispatch(null, null, $request))->toBeInstanceOf(WP_Error::class)
+        ->and(RequestGuard::refusal())->toBe('rest: ');
 });
 
 it('passes a REST read, and any request by another role', function (string $method): void {

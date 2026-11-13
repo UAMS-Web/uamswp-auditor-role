@@ -66,7 +66,7 @@ final class DatabaseGuardTest extends IntegrationTestCase
 
     public function test_an_administrator_runs_every_statement_type(): void
     {
-        global $wpdb;
+        $wpdb = self::database();
 
         wp_set_current_user($this->admin);
 
@@ -79,7 +79,7 @@ final class DatabaseGuardTest extends IntegrationTestCase
 
     public function test_an_auditor_is_refused_every_statement_type_and_nothing_changes(): void
     {
-        global $wpdb;
+        $wpdb = self::database();
 
         // The table exists before the session, so each refused write has something to change.
         wp_set_current_user($this->admin);

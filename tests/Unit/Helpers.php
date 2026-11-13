@@ -76,6 +76,32 @@ function uamswp_auditor_role_array(mixed $value): array
 }
 
 /**
+ * An array that must have string keys only: anything else stops the test.
+ *
+ * @return array<string, mixed>
+ */
+function uamswp_auditor_role_string_keyed(mixed $value): array
+{
+    $keyed = [];
+
+    foreach (uamswp_auditor_role_array($value) as $key => $item) {
+        $keyed[is_string($key) ? $key : throw new TypeError('Expected a string key, got '.get_debug_type($key).'.')] = $item;
+    }
+
+    return $keyed;
+}
+
+/**
+ * An array of string keys and text values, as the stand-ins print them.
+ *
+ * @return array<string, string>
+ */
+function uamswp_auditor_role_string_map(mixed $value): array
+{
+    return array_map(uamswp_auditor_role_text(...), uamswp_auditor_role_string_keyed($value));
+}
+
+/**
  * A value that must be a string: anything else stops the test with its type.
  */
 function uamswp_auditor_role_string(mixed $value): string

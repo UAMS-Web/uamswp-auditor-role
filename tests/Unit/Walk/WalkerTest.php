@@ -54,13 +54,14 @@ function uamswp_auditor_role_walk_walker(array $writes, array &$calls, ?array $a
     };
 
     $fetch = static function (array $target) use (&$log, $writes, &$calls, $bodies): array {
-        $calls[] = 'fetch '.$target['label'];
+        $label = uamswp_auditor_role_string($target['label']);
+        $calls[] = 'fetch '.$label;
 
-        foreach ($writes[$target['label']] ?? [] as $event) {
+        foreach ($writes[$label] ?? [] as $event) {
             $log[] = $event;
         }
 
-        return ['status' => $target['kind'] === 'ajax' ? 403 : 200, 'body' => $bodies[$target['label']] ?? '', 'location' => $target['label'] === 'moved' ? 'https://example.org/elsewhere' : ''];
+        return ['status' => $target['kind'] === 'ajax' ? 403 : 200, 'body' => $bodies[$label] ?? '', 'location' => $label === 'moved' ? 'https://example.org/elsewhere' : ''];
     };
 
     $settle = static function () use (&$calls): void {

@@ -149,6 +149,18 @@ it('reads no network settings from a failed query', function (): void {
     expect(Report::network_settings())->toBe([]);
 });
 
+it('lists installed plugins by file, a version that is not a scalar as empty, and skips an entry with no file name', function (): void {
+    uamswp_auditor_role_g4_install(false, plugins: [5 => ['Version' => '1.0'], 'a/a.php' => ['Version' => ['x']], 'b/b.php' => ['Version' => 2.5], 'c/c.php' => []]);
+
+    expect(Report::network_export()['installed_plugins'])->toBe(['a/a.php' => '', 'b/b.php' => '2.5', 'c/c.php' => '']);
+});
+
+it('reads network settings by name, skipping a name that is not a scalar', function (): void {
+    uamswp_auditor_role_g4_install(true, false, null, [['x'], 'site_name']);
+
+    expect(array_keys(Report::network_settings()))->toBe(['site_name']);
+});
+
 it('exports a single site as not public when its visibility option is not a number', function (mixed $option): void {
     uamswp_auditor_role_g4_install(false, blog_public: $option);
 

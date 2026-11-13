@@ -185,7 +185,7 @@ final class LogViewer
                 </p>
                 <p class="description">
                     <?php
-                if (is_array($last_prune) && isset($last_prune['time'], $last_prune['deleted'])) {
+                if (is_array($last_prune) && isset($last_prune['time'], $last_prune['deleted']) && is_numeric($last_prune['time']) && is_numeric($last_prune['deleted'])) {
                     echo esc_html(sprintf(
                         /* translators: 1: date and time, 2: number of rows */
                         __('A daily job deletes older rows. Last run: %1$s, %2$s rows deleted.', 'uamswp-auditor-role'),

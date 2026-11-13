@@ -148,7 +148,7 @@ final class RequestGuard
      *
      * Kept free of side effects so each branch can be tested on its own.
      *
-     * @param  array<string, mixed>  $params  The query and body parameters.
+     * @param  array<array-key, mixed>  $params  The query and body parameters.
      */
     public static function reason(string $script, string $method, array $params, bool $is_admin): ?string
     {
@@ -202,7 +202,7 @@ final class RequestGuard
      * Why an admin GET would be refused: an acting `action`, or a nonce outside
      * a list table's filter form.
      *
-     * @param  array<string, mixed>  $params
+     * @param  array<array-key, mixed>  $params
      */
     public static function get_reason(string $script, array $params): ?string
     {
@@ -262,11 +262,15 @@ final class RequestGuard
             return $result;
         }
 
-        if (! Session::is_auditor() || in_array($request->get_method(), self::read_methods(), true)) {
+        $method = $request->get_method();
+
+        if (! Session::is_auditor() || in_array($method, self::read_methods(), true)) {
             return $result;
         }
 
-        self::$refusal = 'rest:'.$request->get_method().' '.$request->get_route();
+        $route = $request->get_route();
+
+        self::$refusal = 'rest:'.(is_string($method) ? $method : '').' '.(is_string($route) ? $route : '');
 
         return new WP_Error(
             'uamswp_auditor_role_read_only',
@@ -386,7 +390,7 @@ final class RequestGuard
     /**
      * The query and body parameters, keys only trusted as routing values.
      *
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private static function request_params(): array
     {
