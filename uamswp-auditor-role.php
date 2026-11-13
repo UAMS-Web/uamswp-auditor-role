@@ -7,8 +7,8 @@
  * Version:           0.3.0
  * Requires at least: 6.8
  * Requires PHP:      8.2
- * Author:            University of Arkansas for Medical Sciences
- * Author URI:        https://uams.edu/
+ * Author:            UAMS Web Services
+ * Author URI:        https://communications.uams.edu/web/
  * License:           GPL-3.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain:       uamswp-auditor-role
