@@ -29,6 +29,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The full mutation pass, weekly (Mondays at 07:17 UTC, on the default branch). It catches
+  # decay no pull request touches, such as a dependency or tooling change. A schedule runs the
+  # whole workflow, so every other job runs weekly too. GitHub turns a schedule off after 60
+  # days without activity in the repository.
+  schedule:
+    - cron: '17 7 * * 1'
   workflow_dispatch:
 
 concurrency:
@@ -112,16 +118,16 @@ jobs:
           coverage: pcov
 
       # Mutate only the PHP files under includes/ and tests/Walk/src/ that this change adds, changes or renames.
-      # A change that touches none passes with the reason printed. A manual run mutates
-      # everything `composer mutate` covers.
+      # A change that touches none passes with the reason printed. A manual run and the
+      # weekly schedule mutate everything `composer mutate` covers.
       - name: Select the files to mutate
         id: select
         env:
           EVENT: ${{ github.event_name }}
         run: |
-          if [ "$EVENT" = "workflow_dispatch" ]; then
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$EVENT" = "schedule" ]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
-            echo "A manual run: mutating everything composer mutate covers."
+            echo "A $EVENT run: mutating everything composer mutate covers."
             exit 0
           fi
           if ! git rev-parse --verify --quiet HEAD^1 > /dev/null; then
