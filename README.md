@@ -128,6 +128,15 @@ Sites deploy a branch through WP Pusher, so nothing is built at deploy time and 
 
 A branch download is what WP Pusher installs, and a server may serve the plugin folder for every file type but PHP. `.gitattributes` therefore excludes everything and names back only what the plugin runs. When a runtime folder is added, add a `-export-ignore` line for it; `composer check:archive` and CI fail a change that ships anything else.
 
+## Credits
+
+Developed and maintained by UAMS Web Services.
+
+Developers:
+
+- Josh Daugherty
+- Brent Passmore
+
 ## Licence
 
 GPL-3.0-or-later. Copyright (C) 2026 University of Arkansas for Medical Sciences.
