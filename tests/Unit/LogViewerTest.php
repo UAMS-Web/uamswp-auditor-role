@@ -37,7 +37,7 @@ beforeEach(function (): void {
     Functions\when('sanitize_text_field')->alias('trim');
     Functions\when('wp_kses_post')->returnArg();
     Functions\when('get_admin_page_title')->justReturn('Auditor activity log');
-    Functions\when('absint')->alias(static fn (mixed $value): int => abs((int) $value));
+    Functions\when('absint')->alias(static fn (mixed $value): int => abs(is_numeric($value) ? (int) $value : 0));
     Functions\when('admin_url')->alias(static fn (string $path = ''): string => 'https://example.test/wp-admin/'.$path);
     // Patchwork calls these without strict types, so each checks it was handed an integer.
     Functions\when('number_format_i18n')->alias(static function (mixed $n): string {
@@ -55,7 +55,7 @@ beforeEach(function (): void {
         return gmdate($format, $time);
     });
     Functions\when('selected')->alias(static function (mixed $selected, mixed $current): void {
-        echo (string) $selected === (string) $current ? ' selected="selected"' : '';
+        echo uamswp_auditor_role_text($selected) === uamswp_auditor_role_text($current) ? ' selected="selected"' : '';
     });
     Functions\when('submit_button')->alias(static function (string $text, string $type = 'primary', string $name = 'submit', bool $wrap = true): void {
         echo '<button class="'.$type.'" name="'.$name.'" data-wrap="'.($wrap ? 'p' : 'none').'">'.$text.'</button>';
@@ -63,14 +63,16 @@ beforeEach(function (): void {
     Functions\when('wp_nonce_field')->alias(static function (string $action, string $name): void {
         echo '<input type="hidden" name="'.$name.'" value="nonce-for-'.$action.'">';
     });
-    Functions\when('add_query_arg')->alias(static fn (mixed $key, mixed $value = null, mixed $url = null): string => is_array($key) ? $value.'?'.http_build_query($key) : '?'.$key.'='.$value);
+    Functions\when('add_query_arg')->alias(static fn (mixed $key, mixed $value = null, mixed $url = null): string => is_array($key) ? uamswp_auditor_role_text($value).'?'.http_build_query($key) : '?'.uamswp_auditor_role_text($key).'='.uamswp_auditor_role_text($value));
     Functions\when('paginate_links')->alias(static fn (array $args): string => '<nav>'.var_export($args, true).'</nav>');
 
     LogViewer::$send_header = static function (string $header): void {
-        $GLOBALS['uamswp_auditor_role_g3_headers'][] = $header;
+        $headers = uamswp_auditor_role_array($GLOBALS['uamswp_auditor_role_g3_headers']);
+        $headers[] = $header;
+        $GLOBALS['uamswp_auditor_role_g3_headers'] = $headers;
     };
     LogViewer::$terminate = static function (): never {
-        $GLOBALS['uamswp_auditor_role_g3_ended']++;
+        $GLOBALS['uamswp_auditor_role_g3_ended'] = (int) uamswp_auditor_role_text($GLOBALS['uamswp_auditor_role_g3_ended']) + 1;
 
         throw new RuntimeException('terminated');
     };

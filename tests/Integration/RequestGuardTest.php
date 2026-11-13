@@ -132,7 +132,7 @@ final class RequestGuardTest extends IntegrationTestCase
             $response = rest_do_request($request);
 
             $this->assertSame(403, $response->get_status(), $route);
-            $this->assertSame('uamswp_auditor_role_read_only', $response->get_data()['code'], $route);
+            $this->assertSame('uamswp_auditor_role_read_only', self::value_at($response->get_data(), 'code'), $route);
         }
 
         $this->assertSame('Before', get_the_title($this->post));
@@ -149,7 +149,7 @@ final class RequestGuardTest extends IntegrationTestCase
             $response = rest_do_request($request);
 
             $this->assertSame(403, $response->get_status(), $method);
-            $this->assertSame('uamswp_auditor_role_read_only', $response->get_data()['code'], $method);
+            $this->assertSame('uamswp_auditor_role_read_only', self::value_at($response->get_data(), 'code'), $method);
         }
 
         $this->assertSame('Before', get_the_title($this->post));

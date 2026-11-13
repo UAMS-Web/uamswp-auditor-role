@@ -77,10 +77,10 @@ it('denies a check that maps to a never-granted capability', function (): void {
     expect(MetaCaps::map(['read', 'delete_others_posts'], 'some_plugin_meta_cap', 7, []))->toBe(['do_not_allow']);
 });
 
-it('passes a read capability for an Auditor, as a list', function (): void {
+it('passes a read capability for an Auditor, as a list of strings', function (): void {
     uamswp_auditor_role_user(true);
 
-    expect(MetaCaps::map(['a' => 'edit_posts', 'b' => 7], 'edit_posts', 7, []))->toBe(['edit_posts', 7]);
+    expect(MetaCaps::map(['a' => 'edit_posts', 'b' => 7], 'edit_posts', 7, []))->toBe(['edit_posts']);
 });
 
 it('lets an Auditor open only its own profile', function (mixed $args, array $expected): void {

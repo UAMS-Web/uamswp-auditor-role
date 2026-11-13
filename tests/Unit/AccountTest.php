@@ -142,7 +142,7 @@ it('refuses a sign-in after the end date and records it', function (): void {
     $result = Account::refuse_expired_login(uamswp_auditor_role_user_with(3, 'audit', ['auditor']));
 
     expect($result)->toBeInstanceOf(WP_Error::class)
-        ->and($result->code)->toBe('uamswp_auditor_role_expired')
+        ->and(uamswp_auditor_role_instance($result, WP_Error::class)->get_error_code())->toBe('uamswp_auditor_role_expired')
         ->and($rows->getArrayCopy())->toHaveCount(1)
         ->and($rows[0])->toMatchArray(['event' => 'login_refused', 'user_id' => 3, 'user_login' => 'audit', 'detail' => 'end date 2026-01-01']);
 });

@@ -107,7 +107,15 @@ final class LogQuery
         $sql = "SELECT * FROM %i WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d";
         $rows = $wpdb->get_results($wpdb->prepare($sql, Log::table(), ...array_merge($values, [$limit, $offset])), ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 
-        return is_array($rows) ? array_values($rows) : [];
+        $result = [];
+
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            if (is_array($row)) {
+                $result[] = array_map(static fn (mixed $value): string => is_scalar($value) ? (string) $value : '', $row);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -140,7 +148,12 @@ final class LogQuery
         $users = [];
 
         foreach (is_array($rows) ? $rows : [] as $row) {
-            $users[(int) $row['user_id']] = (string) $row['user_login'];
+            $id = is_array($row) ? ($row['user_id'] ?? null) : null;
+            $login = is_array($row) ? ($row['user_login'] ?? null) : null;
+
+            if (is_numeric($id) && is_scalar($login)) {
+                $users[(int) $id] = (string) $login;
+            }
         }
 
         return $users;

@@ -68,7 +68,12 @@ function uamswp_auditor_role_g3_formatted(): array
 {
     $call = uamswp_auditor_role_g3_formatted_calls()[0];
 
-    return [(string) $call[0], array_values((array) $call[1]), array_values((array) $call[2])];
+    $rows = array_map(
+        static fn (mixed $row): array => array_map(uamswp_auditor_role_text(...), uamswp_auditor_role_array($row)),
+        array_values(uamswp_auditor_role_array($call[1])),
+    );
+
+    return [uamswp_auditor_role_text($call[0]), $rows, array_map(uamswp_auditor_role_text(...), array_values(uamswp_auditor_role_array($call[2])))];
 }
 
 it('lists rows newest first in the format asked for, with every column', function (string $format): void {

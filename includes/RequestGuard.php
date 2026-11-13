@@ -367,7 +367,7 @@ final class RequestGuard
             return true;
         }
 
-        if (! isset($_SERVER['REQUEST_URI'])) {
+        if (! isset($_SERVER['REQUEST_URI']) || ! is_string($_SERVER['REQUEST_URI'])) {
             return false;
         }
 
@@ -378,7 +378,7 @@ final class RequestGuard
 
     private static function method(): string
     {
-        $method = isset($_SERVER['REQUEST_METHOD']) ? sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'])) : 'get';
+        $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'])) : 'get';
 
         return strtoupper($method);
     }
@@ -393,7 +393,7 @@ final class RequestGuard
         // Routing values only, compared against fixed lists; nothing is stored or printed.
         $params = array_merge(wp_unslash($_GET), wp_unslash($_POST)); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
-        if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']) && ! isset($params['_method'])) {
+        if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']) && is_string($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']) && ! isset($params['_method'])) {
             $params['_method'] = sanitize_key(wp_unslash($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']));
         }
 

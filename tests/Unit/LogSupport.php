@@ -62,7 +62,7 @@ final class Uamswp_Auditor_Role_G3_Wpdb
     {
         $index = 0;
         $prepared = (string) preg_replace_callback('/%[ids]/', static function (array $m) use (&$index, $values): string {
-            $value = $values[$index++] ?? '';
+            $value = uamswp_auditor_role_text($values[$index++] ?? '');
 
             return match ($m[0]) {
                 '%i' => '`'.$value.'`',

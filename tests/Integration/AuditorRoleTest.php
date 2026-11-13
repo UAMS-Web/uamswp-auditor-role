@@ -181,7 +181,7 @@ final class AuditorRoleTest extends IntegrationTestCase
         $read = rest_do_request(new \WP_REST_Request('GET', '/wp/v2/posts'));
 
         $this->assertSame(403, $write->get_status());
-        $this->assertSame('uamswp_auditor_role_read_only', $write->get_data()['code']);
+        $this->assertSame('uamswp_auditor_role_read_only', self::value_at($write->get_data(), 'code'));
         $this->assertSame(200, $read->get_status());
     }
 

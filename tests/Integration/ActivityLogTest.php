@@ -270,7 +270,7 @@ final class ActivityLogTest extends IntegrationTestCase
             [$used, $rows, $fields] = uamswp_auditor_role_g3_formatted_calls()[0];
 
             $this->assertSame($format, $used);
-            $this->assertSame(['refused'], array_column($rows, 'event'));
+            $this->assertSame(['refused'], array_column(self::as_array($rows), 'event'));
             $this->assertSame(LogQuery::columns(), $fields);
         }
     }
@@ -305,7 +305,7 @@ final class ActivityLogTest extends IntegrationTestCase
         foreach ([['auditor' => $login], ['auditor' => (string) $this->auditor]] as $assoc) {
             uamswp_auditor_role_g3_cli_reset();
             (new LogCommand)->list([], $assoc + ['format' => 'json']);
-            $this->assertSame([(string) $this->auditor], array_column(uamswp_auditor_role_g3_formatted_calls()[0][1], 'user_id'));
+            $this->assertSame([(string) $this->auditor], array_column(self::as_array(uamswp_auditor_role_g3_formatted_calls()[0][1]), 'user_id'));
         }
 
         $file = get_temp_dir().'uamswp-auditor-role-g3-'.wp_rand().'.csv';
@@ -333,7 +333,7 @@ final class ActivityLogTest extends IntegrationTestCase
 
         uamswp_auditor_role_g3_cli_reset();
         (new LogCommand)->list([], ['format' => 'json', 'all-sites' => '1', 'auditor' => $login]);
-        $rows = uamswp_auditor_role_g3_formatted_calls()[0][1];
+        $rows = self::as_array(uamswp_auditor_role_g3_formatted_calls()[0][1]);
         $this->assertSame([(string) $this->auditor], array_values(array_unique(array_column($rows, 'user_id'))));
         $this->assertCount(2, $rows);
     }
@@ -351,11 +351,11 @@ final class ActivityLogTest extends IntegrationTestCase
         restore_current_blog();
 
         (new LogCommand)->list([], ['format' => 'json']);
-        $this->assertSame([(string) get_current_blog_id()], array_column(uamswp_auditor_role_g3_formatted_calls()[0][1], 'blog_id'));
+        $this->assertSame([(string) get_current_blog_id()], array_column(self::as_array(uamswp_auditor_role_g3_formatted_calls()[0][1]), 'blog_id'));
 
         uamswp_auditor_role_g3_cli_reset();
         (new LogCommand)->list([], ['format' => 'json', 'all-sites' => '1']);
-        $this->assertSame([(string) $blog_id, (string) get_current_blog_id()], array_column(uamswp_auditor_role_g3_formatted_calls()[0][1], 'blog_id'));
+        $this->assertSame([(string) $blog_id, (string) get_current_blog_id()], array_column(self::as_array(uamswp_auditor_role_g3_formatted_calls()[0][1]), 'blog_id'));
     }
 
     public function test_the_command_writes_nothing_to_the_site(): void
@@ -420,7 +420,7 @@ final class ActivityLogTest extends IntegrationTestCase
 
         $this->assertSame(1, Retention::prune());
         $this->assertSame(['login', 'refused'], array_column($this->rows(), 'event'));
-        $this->assertSame(1, get_option(Retention::LAST_PRUNE)['deleted']);
+        $this->assertSame(1, self::value_at(get_option(Retention::LAST_PRUNE), 'deleted'));
     }
 
     public function test_the_prune_does_nothing_in_an_auditor_session(): void
