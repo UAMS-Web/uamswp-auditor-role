@@ -95,14 +95,15 @@ function uamswp_auditor_role_g4_prepared(): array
  *
  * @param  array<int, list<mixed>|null>|null  $option_names  Option names per site, for the secret scan.
  * @param  list<mixed>|null  $network_names  Network option names, or null for a failed query.
+ * @param  mixed  $blog_public  The main site's `blog_public` option.
  */
-function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false, ?array $option_names = null, ?array $network_names = []): void
+function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false, ?array $option_names = null, ?array $network_names = [], mixed $blog_public = '1'): void
 {
     $sites = [
         1 => [
             'home' => 'https://example.org/',
             'theme' => 'uams-2020',
-            'options' => ['blogname' => 'Main', 'blog_public' => '1', 'active_plugins' => [3 => 'gravityforms/gravityforms.php', 7 => 'acf/acf.php']],
+            'options' => ['blogname' => 'Main', 'blog_public' => $blog_public, 'active_plugins' => [3 => 'gravityforms/gravityforms.php', 7 => 'acf/acf.php']],
             'caps' => [...array_fill_keys(UAMSWP_AUDITOR_ROLE_G4_CORE_CAPS, true), 'gform_full_access' => true, 'edit_physicians' => true, 'disabled_cap' => false],
             'details' => ['registered' => '2020-01-01 00:00:00', 'last_updated' => '2026-11-01 00:00:00', 'public' => '1', 'archived' => '0', 'deleted' => '0', 'spam' => '0'],
         ],

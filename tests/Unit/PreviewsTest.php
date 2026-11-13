@@ -58,6 +58,11 @@ it('hooks the capability map before MetaCaps and the edit links last', function 
     Previews::boot();
 });
 
+it('returns only the string capabilities it was given, as a list', function (): void {
+    expect(Previews::map(['a' => 'edit_posts', 'b' => 7, 'c' => null, 'd' => 'read'], 'edit_posts', 7, []))->toBe(['edit_posts', 'read'])
+        ->and(Previews::map('not a list', 'edit_posts', 7, []))->toBe([]);
+});
+
 it('answers read for an Auditor viewing an unpublished post on the front end', function (string $cap, string $method): void {
     uamswp_auditor_role_as(true);
     uamswp_auditor_role_g6_context(method: $method);

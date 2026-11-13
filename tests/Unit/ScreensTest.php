@@ -131,8 +131,8 @@ it('removes hidden entries from the menu for an Auditor, leaving malformed items
         50 => 'not an item',
     ];
     $GLOBALS['submenu'] = [
-        'tools.php' => [5 => ['Export', 'export', 'export.php'], 6 => ['Cron', 'manage_options', 'wp-crontrol'], 7 => ['Short']],
         'broken' => 'not a list',
+        'tools.php' => [5 => ['Export', 'export', 'export.php'], 6 => ['Cron', 'manage_options', 'wp-crontrol'], 7 => ['Short']],
     ];
 
     Screens::remove_menu_entries();

@@ -149,6 +149,19 @@ it('reads no network settings from a failed query', function (): void {
     expect(Report::network_settings())->toBe([]);
 });
 
+it('exports a single site as not public when its visibility option is not a number', function (mixed $option): void {
+    uamswp_auditor_role_g4_install(false, blog_public: $option);
+
+    $sites = Report::network_export()['sites'];
+
+    expect($sites)->toHaveCount(1)
+        ->and(uamswp_auditor_role_at($sites, 0, 'public'))->toBe(0);
+})->with([
+    'false' => [false],
+    'empty' => [''],
+    'text' => ['private'],
+]);
+
 it('exports a single site from its own options, without network fields', function (): void {
     uamswp_auditor_role_g4_install(false);
     Functions\expect('get_site')->never();

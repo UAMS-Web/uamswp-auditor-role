@@ -91,6 +91,12 @@ it('reads matching rows newest first, a page at a time', function (): void {
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe(["SELECT * FROM `wp_uamswp_auditor_log` WHERE 1=1 AND user_id = 5 AND event = 'view' ORDER BY id DESC LIMIT 50 OFFSET 100"]);
 });
 
+it('reads every column of a row as a string, and a column with no scalar value as empty', function (): void {
+    uamswp_auditor_role_g3_db()->results = [[['id' => 9, 'blog_id' => 1.5, 'detail' => null, 'event' => ['x'], 'method' => true], 'not a row']];
+
+    expect(LogQuery::rows(LogQuery::filters([]), 10))->toBe([['id' => '9', 'blog_id' => '1.5', 'detail' => '', 'event' => '', 'method' => '1']]);
+});
+
 it('reads from the first row by default', function (): void {
     uamswp_auditor_role_g3_db()->results = [[]];
 
@@ -117,6 +123,20 @@ it('lists the users in the log, by ID', function (): void {
 
     expect(LogQuery::users())->toBe([7 => 'audit', 12 => '5'])
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe(['SELECT DISTINCT user_id, user_login FROM `wp_uamswp_auditor_log` ORDER BY user_login']);
+});
+
+it('lists only the rows that carry a numeric ID and a scalar login', function (): void {
+    uamswp_auditor_role_g3_db()->results = [[
+        ['user_id' => '7', 'user_login' => null],
+        ['user_id' => 'x', 'user_login' => 'nobody'],
+        ['user_id' => null, 'user_login' => 'nobody'],
+        ['user_login' => 'no id'],
+        ['user_id' => '9'],
+        'not a row',
+        ['user_id' => '12', 'user_login' => 'ok'],
+    ]];
+
+    expect(LogQuery::users())->toBe([12 => 'ok']);
 });
 
 it('lists no users when the query fails', function (): void {
