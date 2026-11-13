@@ -32,14 +32,14 @@ require ABSPATH.'wp-admin/menu.php';
 $slugs = [];
 
 foreach ((array) $menu as $item) {
-    if (isset($item[2]) && is_string($item[2]) && ! str_starts_with($item[2], 'separator')) {
+    if (is_array($item) && isset($item[2]) && is_string($item[2]) && ! str_starts_with($item[2], 'separator')) {
         $slugs[] = $item[2];
     }
 }
 
 foreach ((array) $submenu as $items) {
     foreach ((array) $items as $item) {
-        if (isset($item[2]) && is_string($item[2])) {
+        if (is_array($item) && isset($item[2]) && is_string($item[2])) {
             $slugs[] = $item[2];
         }
     }

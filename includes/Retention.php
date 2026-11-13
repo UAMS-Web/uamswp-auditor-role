@@ -139,7 +139,7 @@ final class Retention
      */
     public static function prune(): int
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         if (Session::is_auditor() || get_option(Log::OPTION) !== Log::SCHEMA) {
             return 0;
@@ -150,7 +150,8 @@ final class Retention
 
         // At most 100 statements of 1,000 rows each per run; the next run takes the rest.
         for ($batch = 0; $batch < 100; $batch++) {
-            $removed = $wpdb->query($wpdb->prepare('DELETE FROM %i WHERE logged_at < %s LIMIT %d', Log::table(), $cutoff, 1000)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $statement = $wpdb->prepare('DELETE FROM %i WHERE logged_at < %s LIMIT %d', Log::table(), $cutoff, 1000);
+            $removed = is_string($statement) ? $wpdb->query($statement) : 0; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 
             $removed = is_int($removed) ? $removed : 0;
             $deleted += $removed;

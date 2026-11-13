@@ -65,7 +65,7 @@ final class Log
      */
     public static function table(): string
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         return $wpdb->prefix.self::TABLE;
     }
@@ -85,7 +85,7 @@ final class Log
      */
     public static function install(): void
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         DatabaseGuard::bypass(static function () use ($wpdb): void {
             if (! function_exists('dbDelta')) {
@@ -124,7 +124,7 @@ final class Log
      */
     public static function write(string $event, int $user_id, string $login, string $detail = ''): void
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         if (get_option(self::OPTION) !== self::SCHEMA) {
             return;

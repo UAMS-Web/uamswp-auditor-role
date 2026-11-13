@@ -141,7 +141,7 @@ final class Session
      */
     public static function login_is_auditor(string $login): bool
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         // One read, joined by login, so no user ID passes through PHP.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery

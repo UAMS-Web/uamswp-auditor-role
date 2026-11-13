@@ -40,7 +40,7 @@ it('lists the columns in export order', function (): void {
 });
 
 it('cleans filters to a fixed shape', function (array $raw, array $clean): void {
-    expect(LogQuery::filters($raw))->toBe($clean);
+    expect(LogQuery::filters(uamswp_auditor_role_string_keyed($raw)))->toBe($clean);
 })->with([
     'every filter' => [['user_id' => '5', 'from' => '2026-11-01', 'to' => '2026-01-31', 'event' => 'refused'], ['user_id' => 5, 'from' => '2026-11-01', 'to' => '2026-01-31', 'event' => 'refused']],
     'none' => [[], ['user_id' => 0, 'from' => '', 'to' => '', 'event' => '']],
@@ -74,8 +74,8 @@ it('accepts each event the log records', function (string $event): void {
 
 it('builds the WHERE clause from placeholders only', function (array $filters, string $where, array $values): void {
     // Each dataset's filters are already clean, so filters() hands them back unchanged.
-    expect(LogQuery::filters($filters))->toBe($filters)
-        ->and(LogQuery::where(LogQuery::filters($filters)))->toBe([$where, $values]);
+    expect(LogQuery::filters(uamswp_auditor_role_string_keyed($filters)))->toBe($filters)
+        ->and(LogQuery::where(LogQuery::filters(uamswp_auditor_role_string_keyed($filters))))->toBe([$where, $values]);
 })->with([
     'every filter' => [['user_id' => 5, 'from' => '2026-11-01', 'to' => '2026-11-05', 'event' => 'view'], '1=1 AND user_id = %d AND logged_at >= %s AND logged_at <= %s AND event = %s', [5, '2026-11-01 00:00:00', '2026-11-05 23:59:59', 'view']],
     'user 1' => [['user_id' => 1, 'from' => '', 'to' => '', 'event' => ''], '1=1 AND user_id = %d', [1]],
@@ -92,7 +92,7 @@ it('reads matching rows newest first, a page at a time', function (): void {
 });
 
 it('reads every column of a row as a string, and a column with no scalar value as empty', function (): void {
-    uamswp_auditor_role_g3_db()->results = [[['id' => 9, 'blog_id' => 1.5, 'detail' => null, 'event' => ['x'], 'method' => true], 'not a row']];
+    uamswp_auditor_role_g3_db()->results = [[['id' => 9, 'blog_id' => 1.5, 'detail' => null, 'event' => ['x'], 'method' => true, 4 => 'no name']]];
 
     expect(LogQuery::rows(LogQuery::filters([]), 10))->toBe([['id' => '9', 'blog_id' => '1.5', 'detail' => '', 'event' => '', 'method' => '1']]);
 });

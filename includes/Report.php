@@ -46,7 +46,8 @@ final class Report
      */
     public static function discovery(): array
     {
-        global $wpdb, $wp_version;
+        global $wp_version;
+        $wpdb = Database::wpdb();
 
         // get_plugins() lives here, and WP-CLI loads only part of the admin
         // includes. Core loads the file by this same path, so this is a no-op
@@ -164,13 +165,17 @@ final class Report
      */
     public static function network_settings(): array
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         $names = $wpdb->get_col($wpdb->prepare('SELECT DISTINCT meta_key FROM %i WHERE site_id = %d ORDER BY meta_key', $wpdb->sitemeta, get_current_network_id())); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
         $settings = [];
 
         foreach ((array) $names as $name) {
+            if (! is_scalar($name)) {
+                continue;
+            }
+
             $name = (string) $name;
 
             // Transients are caches, not settings.
@@ -191,7 +196,7 @@ final class Report
      */
     public static function secret_option_names(): array
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         $names = $wpdb->get_col($wpdb->prepare('SELECT option_name FROM %i WHERE option_name NOT LIKE %s AND option_name NOT LIKE %s', $wpdb->options, '\_transient\_%', '\_site\_transient\_%')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
@@ -205,7 +210,7 @@ final class Report
      */
     public static function secret_network_option_names(): array
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         $names = $wpdb->get_col($wpdb->prepare('SELECT DISTINCT meta_key FROM %i WHERE meta_key NOT LIKE %s', $wpdb->sitemeta, '\_site\_transient\_%')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
@@ -267,7 +272,12 @@ final class Report
         $plugins = [];
 
         foreach (get_plugins() as $file => $data) {
-            $plugins[$file] = (string) ($data['Version'] ?? '');
+            if (! is_string($file)) {
+                continue;
+            }
+
+            $version = $data['Version'] ?? '';
+            $plugins[$file] = is_scalar($version) ? (string) $version : '';
         }
 
         return $plugins;

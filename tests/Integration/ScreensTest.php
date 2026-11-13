@@ -126,7 +126,7 @@ final class ScreensTest extends IntegrationTestCase
 
     public function test_removing_an_entry_through_the_filter_opens_that_screen(): void
     {
-        $open = static fn (array $hidden): array => array_values(array_diff($hidden, ['page:gf_entries', 'export.php']));
+        $open = static fn (array $hidden): array => array_values(array_filter($hidden, static fn (mixed $entry): bool => ! in_array($entry, ['page:gf_entries', 'export.php'], true)));
         add_filter(Screens::FILTER, $open);
 
         wp_set_current_user($this->auditor);

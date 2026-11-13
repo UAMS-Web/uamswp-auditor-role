@@ -58,7 +58,19 @@ $query = static function (string $sql) use ($db): array {
         throw new RuntimeException($e->getMessage(), 0, $e);
     }
 
-    return $result instanceof mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $rows = [];
+
+    foreach ($result instanceof mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [] as $row) {
+        $keyed = [];
+
+        foreach ($row as $column => $value) {
+            $keyed[(string) $column] = $value;
+        }
+
+        $rows[] = $keyed;
+    }
+
+    return $rows;
 };
 
 // Prove the instrument sees a write before trusting an empty window.

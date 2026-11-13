@@ -16,8 +16,15 @@ add_action('admin_init', static function (): void {
 
     global $wpdb;
 
+    if (! $wpdb instanceof wpdb) {
+        throw new RuntimeException('The planted write needs WordPress\' database object.');
+    }
+
+    // The connection settings are constants of unknown type to static analysis.
+    $setting = static fn (mixed $value): string => is_string($value) ? $value : throw new RuntimeException('A database setting is not a string.');
+
     // Its own connection, so the guard's `query` filter never sees the statement.
-    $db = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $db = new mysqli($setting(DB_HOST), $setting(DB_USER), $setting(DB_PASSWORD), $setting(DB_NAME));
     $table = $wpdb->options;
     $db->query("INSERT INTO `{$table}` (option_name, option_value, autoload) VALUES ('uamswp_walk_planted', '".time()."', 'off') ON DUPLICATE KEY UPDATE option_value = VALUES(option_value)");
     $db->close();

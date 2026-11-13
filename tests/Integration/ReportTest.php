@@ -82,7 +82,7 @@ final class ReportTest extends IntegrationTestCase
 
     public function test_the_export_reads_only(): void
     {
-        global $wpdb;
+        $wpdb = self::database();
 
         $writes = 0;
         $count = static function (string $query) use (&$writes): string {

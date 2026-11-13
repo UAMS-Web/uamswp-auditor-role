@@ -96,8 +96,9 @@ function uamswp_auditor_role_g4_prepared(): array
  * @param  array<int, list<mixed>|null>|null  $option_names  Option names per site, for the secret scan.
  * @param  list<mixed>|null  $network_names  Network option names, or null for a failed query.
  * @param  mixed  $blog_public  The main site's `blog_public` option.
+ * @param  array<array-key, mixed>|null  $plugins  What `get_plugins()` returns, or the default list.
  */
-function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false, ?array $option_names = null, ?array $network_names = [], mixed $blog_public = '1'): void
+function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false, ?array $option_names = null, ?array $network_names = [], mixed $blog_public = '1', ?array $plugins = null): void
 {
     $sites = [
         1 => [
@@ -167,7 +168,7 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
     ][$name] ?? $default);
     Functions\when('get_super_admins')->justReturn([2 => 'root', 5 => 'ops']);
     Functions\when('get_current_network_id')->justReturn(1);
-    Functions\when('get_plugins')->justReturn(['gravityforms/gravityforms.php' => ['Version' => '2.9.1'], 'acf/acf.php' => ['Version' => 6], 'hello.php' => []]);
+    Functions\when('get_plugins')->justReturn($plugins ?? ['gravityforms/gravityforms.php' => ['Version' => '2.9.1'], 'acf/acf.php' => ['Version' => 6], 'hello.php' => []]);
     Functions\when('get_mu_plugins')->justReturn(['uamswp-auditor-role-loader.php' => []]);
     Functions\when('get_dropins')->justReturn(['sunrise.php' => []]);
     Functions\when('wp_get_themes')->justReturn(['uams-2020' => new stdClass, 'genesis' => new stdClass]);
@@ -184,6 +185,7 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
         /**
          * @param  array<int, list<mixed>|null>  $option_names
          * @param  list<mixed>|null  $network_names
+         * @param  Closure(): int  $current
          */
         public function __construct(private array $option_names, private readonly ?array $network_names, private readonly Closure $current) {}
 

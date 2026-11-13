@@ -9,6 +9,8 @@
 
 declare(strict_types=1);
 
+use PHPUnit\Framework\TestCase;
+
 use function Brain\Monkey\setUp;
 use function Brain\Monkey\tearDown;
 
@@ -30,7 +32,10 @@ uses()
         setUp();
     })
     ->afterEach(function (): void {
-        $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
+        // Pest binds the test case as `$this`; static analysis cannot see the binding.
+        if ($this instanceof TestCase) {
+            $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
+        }
 
         tearDown();
     })

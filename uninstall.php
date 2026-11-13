@@ -21,6 +21,8 @@ function uamswp_auditor_role_remove_site_data(): void
 {
     global $wpdb;
 
+    // WordPress creates $wpdb before this file runs; static analysis types a global as mixed.
+    /** @var wpdb $wpdb */
     remove_role('auditor');
     wp_clear_scheduled_hook('uamswp_auditor_role_prune');
 
@@ -28,7 +30,11 @@ function uamswp_auditor_role_remove_site_data(): void
         delete_option($option);
     }
 
-    $wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', $wpdb->prefix.'uamswp_auditor_log')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+    $statement = $wpdb->prepare('DROP TABLE IF EXISTS %i', $wpdb->prefix.'uamswp_auditor_log');
+
+    if (is_string($statement)) {
+        $wpdb->query($statement); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+    }
 }
 
 if (is_multisite()) {

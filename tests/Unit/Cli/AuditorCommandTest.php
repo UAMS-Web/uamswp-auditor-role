@@ -59,7 +59,7 @@ it('prints the discovery report as pretty JSON with slashes unescaped by default
     $printed = uamswp_auditor_role_string($lines[0][0]);
     expect($printed)->toContain("\n    \"type\": \"multisite-subdirectory\"")
         ->toContain('"url": "https://example.org/"')
-        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array(json_decode($printed, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
+        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_string_keyed(json_decode($printed, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
 });
 
 it('prints the discovery report as YAML when asked', function (): void {
@@ -71,7 +71,7 @@ it('prints the discovery report as YAML when asked', function (): void {
     expect($printed)->toHaveCount(1)
         ->and(UamswpAuditorRoleG4CliLog::calls('line'))->toBe([])
         ->and($printed[0][1])->toBe(['format' => 'yaml'])
-        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array($printed[0][0])))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
+        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_string_keyed($printed[0][0])))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
 });
 
 it('prints an empty line when the report cannot be encoded', function (): void {
@@ -93,7 +93,7 @@ it('prints the network export as pretty JSON with slashes unescaped', function (
     expect($printed)->toContain("\n    \"wordpress\": \"6.8.8\"")
         ->toContain('"url": "https://example.org/two/"')
         ->and(str_contains($printed, 'ghp_abcdefghijklmnop'))->toBeFalse()
-        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array(json_decode($printed, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
+        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_string_keyed(json_decode($printed, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
         ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([]);
 });
 
@@ -108,7 +108,7 @@ it('writes the network export to a file, ending in a newline', function (): void
         expect($written)->toEndWith("}\n")
             ->toContain("\n    \"multisite\": true")
             ->and(str_contains($written, 'ghp_abcdefghijklmnop'))->toBeFalse()
-            ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array(json_decode($written, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
+            ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_string_keyed(json_decode($written, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
             ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([['Wrote '.$file]])
             ->and(UamswpAuditorRoleG4CliLog::calls('line'))->toBe([]);
     } finally {
@@ -189,7 +189,7 @@ it('rewrites the role on the current site of a single install', function (array 
     $GLOBALS['uamswp_auditor_role_g4_site'] = 4;
     uamswp_auditor_role_g4_expect_role_writes([4]);
 
-    (new AuditorCommand)->refresh_role([], $assoc);
+    (new AuditorCommand)->refresh_role([], uamswp_auditor_role_string_map($assoc));
 
     expect(uamswp_auditor_role_instance($GLOBALS['uamswp_auditor_role_g4_written'], ArrayObject::class)->getArrayCopy())->toBe([4])
         ->and($GLOBALS['uamswp_auditor_role_g4_switches'])->toBe([])
