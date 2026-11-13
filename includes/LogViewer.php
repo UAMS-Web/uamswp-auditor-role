@@ -78,7 +78,7 @@ final class LogViewer
 
         // Filters for a read-only list; each is validated against a fixed shape in LogQuery::filters().
         $filters = LogQuery::filters(wp_unslash($_GET)); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $paged = isset($_GET['paged']) && is_scalar($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $total = LogQuery::count($filters);
         $rows = LogQuery::rows($filters, self::per_page(), ($paged - 1) * self::per_page());
         $pages = (int) ceil($total / self::per_page());
@@ -243,7 +243,7 @@ final class LogViewer
         check_admin_referer(self::RETENTION, self::NONCE);
 
         // The nonce was verified above.
-        $days = isset($_POST['retention_days']) ? sanitize_text_field(wp_unslash($_POST['retention_days'])) : null; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $days = isset($_POST['retention_days']) && is_string($_POST['retention_days']) ? sanitize_text_field(wp_unslash($_POST['retention_days'])) : null; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
         update_option(Retention::OPTION, Retention::clamp($days), false);
 

@@ -124,6 +124,7 @@ final class Report
         foreach (self::site_ids() as $blog_id) {
             self::on_site($blog_id, static function () use ($blog_id, &$sites): void {
                 $details = is_multisite() ? get_site($blog_id) : null;
+                $blog_public = get_option('blog_public');
 
                 $sites[] = [
                     'blog_id' => $blog_id,
@@ -131,7 +132,7 @@ final class Report
                     'name' => get_option('blogname'),
                     'registered' => $details === null ? '' : $details->registered,
                     'last_updated' => $details === null ? '' : $details->last_updated,
-                    'public' => $details === null ? (int) get_option('blog_public') : (int) $details->public,
+                    'public' => $details === null ? (is_numeric($blog_public) ? (int) $blog_public : 0) : (int) $details->public,
                     'archived' => $details === null ? 0 : (int) $details->archived,
                     'deleted' => $details === null ? 0 : (int) $details->deleted,
                     'spam' => $details === null ? 0 : (int) $details->spam,

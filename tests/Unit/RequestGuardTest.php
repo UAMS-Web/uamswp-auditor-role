@@ -62,7 +62,7 @@ function uamswp_auditor_role_g2_request(string $script, string $method, bool $ad
 /**
  * A wp_die() that records its arguments and stops, as WordPress' does.
  *
- * @param  list<mixed>  $calls
+ * @param  list<list<mixed>>  $calls
  */
 function uamswp_auditor_role_g2_die(array &$calls): void
 {
@@ -225,8 +225,8 @@ it('refuses a REST write after a method override, with a 403', function (): void
     $result = RequestGuard::rest_pre_dispatch(null, null, uamswp_auditor_role_rest_request('DELETE', '/wp/v2/posts/1'));
 
     expect($result)->toBeInstanceOf(WP_Error::class)
-        ->and($result->code)->toBe('uamswp_auditor_role_read_only')
-        ->and($result->data)->toBe(['status' => 403])
+        ->and(uamswp_auditor_role_instance($result, WP_Error::class)->get_error_code())->toBe('uamswp_auditor_role_read_only')
+        ->and(uamswp_auditor_role_instance($result, WP_Error::class)->get_error_data())->toBe(['status' => 403])
         ->and(RequestGuard::refusal())->toBe('rest:DELETE /wp/v2/posts/1');
 });
 

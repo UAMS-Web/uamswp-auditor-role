@@ -11,8 +11,10 @@
 
 declare(strict_types=1);
 
-$root = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/');
-$request = '/'.ltrim((string) parse_url(urldecode((string) $_SERVER['REQUEST_URI']), PHP_URL_PATH), '/');
+$documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+$root = rtrim(is_string($documentRoot) ? $documentRoot : '', '/');
+$request = '/'.ltrim((string) parse_url(urldecode(is_string($requestUri) ? $requestUri : ''), PHP_URL_PATH), '/');
 $path = $request;
 
 if (! file_exists($root.$path) && preg_match('#^/[\w\-]+(/wp-(?:admin|includes|content)(?:/.*)?|/wp-[a-z\-]+\.php)$#', $path, $match) === 1) {

@@ -347,11 +347,17 @@ final class Screens
 
         if (is_array($submenu)) {
             foreach ($submenu as $parent => $items) {
-                foreach (is_array($items) ? $items : [] as $index => $item) {
+                if (! is_array($items)) {
+                    continue;
+                }
+
+                foreach ($items as $index => $item) {
                     if (self::is_hidden_item($item)) {
-                        unset($submenu[$parent][$index]);
+                        unset($items[$index]);
                     }
                 }
+
+                $submenu[$parent] = $items;
             }
         }
 
@@ -382,27 +388,35 @@ final class Screens
 
         if (is_array($menu)) {
             foreach ($menu as $index => $item) {
-                if (self::is_core_plugins_item($item)) {
-                    $menu[$index][1] = 'read';
+                if (is_array($item) && self::is_core_plugins_item($item)) {
+                    $item[1] = 'read';
+                    $menu[$index] = $item;
                 }
             }
         }
 
         if (is_array($submenu) && is_array($submenu['plugins.php'] ?? null)) {
-            foreach ($submenu['plugins.php'] as $index => $item) {
-                if (self::is_core_plugins_item($item)) {
-                    $submenu['plugins.php'][$index][1] = 'read';
+            $items = $submenu['plugins.php'];
+
+            foreach ($items as $index => $item) {
+                if (is_array($item) && self::is_core_plugins_item($item)) {
+                    $item[1] = 'read';
+                    $items[$index] = $item;
                 }
             }
+
+            $submenu['plugins.php'] = $items;
         }
     }
 
     /**
      * Whether a menu or submenu item is core's entry for the Plugins screen.
+     *
+     * @param  array<array-key, mixed>  $item
      */
-    private static function is_core_plugins_item(mixed $item): bool
+    private static function is_core_plugins_item(array $item): bool
     {
-        return is_array($item) && ($item[1] ?? null) === 'activate_plugins' && ($item[2] ?? null) === 'plugins.php';
+        return ($item[1] ?? null) === 'activate_plugins' && ($item[2] ?? null) === 'plugins.php';
     }
 
     /**

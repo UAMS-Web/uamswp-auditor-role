@@ -99,7 +99,7 @@ final class MetaCaps
      */
     public static function map(mixed $caps, mixed $cap, mixed $user_id, mixed $args): array
     {
-        $caps = is_array($caps) ? array_values($caps) : [];
+        $caps = is_array($caps) ? array_values(array_filter($caps, is_string(...))) : [];
 
         if (! is_string($cap) || ! is_int($user_id)) {
             return $caps;
@@ -116,7 +116,7 @@ final class MetaCaps
         }
 
         if ($cap === 'edit_user') {
-            if (! is_array($args) || ! isset($args[0])) {
+            if (! is_array($args) || ! isset($args[0]) || ! is_numeric($args[0])) {
                 return ['do_not_allow'];
             }
 
@@ -145,7 +145,7 @@ final class MetaCaps
         }
 
         foreach ($caps as $mapped) {
-            if (is_string($mapped) && Role::is_never_granted($mapped)) {
+            if (Role::is_never_granted($mapped)) {
                 return ['do_not_allow'];
             }
         }

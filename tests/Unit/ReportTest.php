@@ -88,7 +88,7 @@ it('scans option names with transients excluded in the query', function (): void
     Report::secret_option_names();
     Report::secret_network_option_names();
 
-    expect($GLOBALS['wpdb']->prepared)->toBe([
+    expect(uamswp_auditor_role_g4_prepared())->toBe([
         'SELECT option_name FROM %i WHERE option_name NOT LIKE %s AND option_name NOT LIKE %s | wp_options, \_transient\_%, \_site\_transient\_%',
         'SELECT DISTINCT meta_key FROM %i WHERE meta_key NOT LIKE %s | wp_sitemeta, \_site\_transient\_%',
     ]);
@@ -140,7 +140,7 @@ it('reads network settings for the current network only', function (): void {
 
     Report::network_settings();
 
-    expect($GLOBALS['wpdb']->prepared)->toBe(['SELECT DISTINCT meta_key FROM %i WHERE site_id = %d ORDER BY meta_key | wp_sitemeta, 3']);
+    expect(uamswp_auditor_role_g4_prepared())->toBe(['SELECT DISTINCT meta_key FROM %i WHERE site_id = %d ORDER BY meta_key | wp_sitemeta, 3']);
 });
 
 it('reads no network settings from a failed query', function (): void {

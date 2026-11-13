@@ -56,10 +56,10 @@ it('prints the discovery report as pretty JSON with slashes unescaped by default
     $lines = UamswpAuditorRoleG4CliLog::calls('line');
     expect($lines)->toHaveCount(1);
 
-    $printed = $lines[0][0];
+    $printed = uamswp_auditor_role_string($lines[0][0]);
     expect($printed)->toContain("\n    \"type\": \"multisite-subdirectory\"")
         ->toContain('"url": "https://example.org/"')
-        ->and(uamswp_auditor_role_g4_untimed(json_decode($printed, true)))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
+        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array(json_decode($printed, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
 });
 
 it('prints the discovery report as YAML when asked', function (): void {
@@ -71,7 +71,7 @@ it('prints the discovery report as YAML when asked', function (): void {
     expect($printed)->toHaveCount(1)
         ->and(UamswpAuditorRoleG4CliLog::calls('line'))->toBe([])
         ->and($printed[0][1])->toBe(['format' => 'yaml'])
-        ->and(uamswp_auditor_role_g4_untimed($printed[0][0]))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
+        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array($printed[0][0])))->toBe(uamswp_auditor_role_g4_untimed(Report::discovery()));
 });
 
 it('prints an empty line when the report cannot be encoded', function (): void {
@@ -89,11 +89,11 @@ it('prints the network export as pretty JSON with slashes unescaped', function (
 
     (new AuditorCommand)->network_export([], []);
 
-    $printed = UamswpAuditorRoleG4CliLog::calls('line')[0][0];
+    $printed = uamswp_auditor_role_string(UamswpAuditorRoleG4CliLog::calls('line')[0][0]);
     expect($printed)->toContain("\n    \"wordpress\": \"6.8.8\"")
         ->toContain('"url": "https://example.org/two/"')
         ->and(str_contains($printed, 'ghp_abcdefghijklmnop'))->toBeFalse()
-        ->and(uamswp_auditor_role_g4_untimed(json_decode($printed, true)))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
+        ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array(json_decode($printed, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
         ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([]);
 });
 
@@ -108,7 +108,7 @@ it('writes the network export to a file, ending in a newline', function (): void
         expect($written)->toEndWith("}\n")
             ->toContain("\n    \"multisite\": true")
             ->and(str_contains($written, 'ghp_abcdefghijklmnop'))->toBeFalse()
-            ->and(uamswp_auditor_role_g4_untimed(json_decode($written, true)))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
+            ->and(uamswp_auditor_role_g4_untimed(uamswp_auditor_role_array(json_decode($written, true))))->toBe(uamswp_auditor_role_g4_untimed(Report::network_export()))
             ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([['Wrote '.$file]])
             ->and(UamswpAuditorRoleG4CliLog::calls('line'))->toBe([]);
     } finally {
@@ -191,7 +191,7 @@ it('rewrites the role on the current site of a single install', function (array 
 
     (new AuditorCommand)->refresh_role([], $assoc);
 
-    expect($GLOBALS['uamswp_auditor_role_g4_written']->getArrayCopy())->toBe([4])
+    expect(uamswp_auditor_role_instance($GLOBALS['uamswp_auditor_role_g4_written'], ArrayObject::class)->getArrayCopy())->toBe([4])
         ->and($GLOBALS['uamswp_auditor_role_g4_switches'])->toBe([])
         ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([['Rewrote the role on 1 site(s).']]);
 })->with(['without --network' => [[]], 'with --network' => [['network' => '']]]);
@@ -202,7 +202,7 @@ it('rewrites the role on the current site of a network, switched to it', functio
 
     (new AuditorCommand)->refresh_role([], []);
 
-    expect($GLOBALS['uamswp_auditor_role_g4_written']->getArrayCopy())->toBe([1])
+    expect(uamswp_auditor_role_instance($GLOBALS['uamswp_auditor_role_g4_written'], ArrayObject::class)->getArrayCopy())->toBe([1])
         ->and($GLOBALS['uamswp_auditor_role_g4_switches'])->toBe([1, 'restore'])
         ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([['Rewrote the role on 1 site(s).']]);
 });
@@ -213,7 +213,7 @@ it('rewrites the role on every site of a network with --network', function (): v
 
     (new AuditorCommand)->refresh_role([], ['network' => '']);
 
-    expect($GLOBALS['uamswp_auditor_role_g4_written']->getArrayCopy())->toBe([1, 2])
+    expect(uamswp_auditor_role_instance($GLOBALS['uamswp_auditor_role_g4_written'], ArrayObject::class)->getArrayCopy())->toBe([1, 2])
         ->and($GLOBALS['uamswp_auditor_role_g4_switches'])->toBe([1, 'restore', 2, 'restore'])
         ->and(UamswpAuditorRoleG4CliLog::calls('success'))->toBe([['Rewrote the role on 2 site(s).']]);
 });

@@ -137,9 +137,9 @@ it('removes hidden entries from the menu for an Auditor, leaving malformed items
 
     Screens::remove_menu_entries();
 
-    expect(array_keys($GLOBALS['menu']))->toBe([20, 30, 40, 50])
-        ->and(array_keys($GLOBALS['submenu']['tools.php']))->toBe([6, 7])
-        ->and($GLOBALS['submenu']['broken'])->toBe('not a list');
+    expect(array_keys(uamswp_auditor_role_array($GLOBALS['menu'])))->toBe([20, 30, 40, 50])
+        ->and(array_keys(uamswp_auditor_role_array(uamswp_auditor_role_at($GLOBALS, 'submenu', 'tools.php'))))->toBe([6, 7])
+        ->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'broken'))->toBe('not a list');
 });
 
 it('leaves a menu that is not a list alone', function (): void {
@@ -161,7 +161,7 @@ it('leaves the menu alone for another role', function (): void {
 
     Screens::remove_menu_entries();
 
-    expect($GLOBALS['menu'])->toHaveCount(1)->and($GLOBALS['submenu']['tools.php'])->toHaveCount(1);
+    expect($GLOBALS['menu'])->toHaveCount(1)->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'tools.php'))->toHaveCount(1);
 });
 
 it('takes the list from the filter, keeping only names, as a list', function (): void {
@@ -283,10 +283,10 @@ it('files core\'s Plugins menu entries under read for an Auditor, and nothing el
 
     Screens::open_plugins_menu();
 
-    expect(array_column(array_filter($GLOBALS['menu'], is_array(...)), 1))->toBe(['switch_themes', 'read', 'activate_plugins'])
-        ->and($GLOBALS['menu'][67])->toBe('not an item')
-        ->and(array_column($GLOBALS['submenu']['plugins.php'], 1))->toBe(['read', 'install_plugins', 'manage_options'])
-        ->and($GLOBALS['submenu']['tools.php'][5][1])->toBe('activate_plugins');
+    expect(array_column(array_filter(uamswp_auditor_role_array($GLOBALS['menu']), is_array(...)), 1))->toBe(['switch_themes', 'read', 'activate_plugins'])
+        ->and(uamswp_auditor_role_at($GLOBALS, 'menu', 67))->toBe('not an item')
+        ->and(array_column(uamswp_auditor_role_array(uamswp_auditor_role_at($GLOBALS, 'submenu', 'plugins.php')), 1))->toBe(['read', 'install_plugins', 'manage_options'])
+        ->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'tools.php', 5, 1))->toBe('activate_plugins');
 });
 
 it('leaves the Plugins menu entries alone for another role', function (): void {
@@ -296,8 +296,8 @@ it('leaves the Plugins menu entries alone for another role', function (): void {
 
     Screens::open_plugins_menu();
 
-    expect($GLOBALS['menu'][65][1])->toBe('activate_plugins')
-        ->and($GLOBALS['submenu']['plugins.php'][5][1])->toBe('activate_plugins');
+    expect(uamswp_auditor_role_at($GLOBALS, 'menu', 65, 1))->toBe('activate_plugins')
+        ->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'plugins.php', 5, 1))->toBe('activate_plugins');
 });
 
 it('opens the Plugins menu with no submenu, and with none at all', function (mixed $submenu): void {
@@ -307,7 +307,7 @@ it('opens the Plugins menu with no submenu, and with none at all', function (mix
 
     Screens::open_plugins_menu();
 
-    expect($GLOBALS['menu'][65][1])->toBe('read')
+    expect(uamswp_auditor_role_at($GLOBALS, 'menu', 65, 1))->toBe('read')
         ->and($GLOBALS['submenu'])->toBe($submenu);
 })->with([
     'no menus' => [null],

@@ -103,17 +103,20 @@ it('writes one row with every field, cut to its column, past the guard', functio
 
     $row = uamswp_auditor_role_g3_db()->inserted[0];
 
+    $loggedAt = uamswp_auditor_role_string($row['logged_at']);
+    $url = uamswp_auditor_role_string($row['url']);
+
     expect(array_keys($row))->toBe(['__table', 'logged_at', 'user_id', 'user_login', 'blog_id', 'event', 'method', 'screen', 'url', 'detail'])
         ->and($row['__table'])->toBe('wp_uamswp_auditor_log')
-        ->and($row['logged_at'])->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/')
-        ->and(abs(strtotime($row['logged_at'].' UTC') - time()))->toBeLessThan(3)
+        ->and($loggedAt)->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/')
+        ->and(abs(strtotime($loggedAt.' UTC') - time()))->toBeLessThan(3)
         ->and($row['user_id'])->toBe(7)
         ->and($row['user_login'])->toBe(str_repeat('L', 60))
         ->and($row['blog_id'])->toBe(3)
         ->and($row['event'])->toBe('refused')
         ->and($row['method'])->toBe('PROPFINDXY')
         ->and($row['screen'])->toBe(substr('admin.php?page='.str_repeat('p', 200), 0, 191))
-        ->and(strlen($row['url']))->toBe(2048)
+        ->and(strlen($url))->toBe(2048)
         ->and($row['url'])->toStartWith('/wp-admin/admin.php?_wpnonce=REDACTED&aaa')
         ->and($row['detail'])->toBe(str_repeat('d', 1000))
         ->and(uamswp_auditor_role_g3_db()->formats[0])->toBe(['%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s']);

@@ -43,7 +43,7 @@ final class Previews
      */
     public static function map(mixed $caps, mixed $cap, mixed $user_id, mixed $args): array
     {
-        $caps = is_array($caps) ? array_values($caps) : [];
+        $caps = is_array($caps) ? array_values(array_filter($caps, is_string(...))) : [];
 
         if (($cap !== 'edit_post' && $cap !== 'edit_page') || ! is_int($user_id)) {
             return $caps;
@@ -70,7 +70,7 @@ final class Previews
             return false;
         }
 
-        if (! isset($_SERVER['REQUEST_METHOD'])) {
+        if (! isset($_SERVER['REQUEST_METHOD']) || ! is_string($_SERVER['REQUEST_METHOD'])) {
             return false;
         }
 

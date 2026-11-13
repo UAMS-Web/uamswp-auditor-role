@@ -46,6 +46,73 @@ function uamswp_auditor_role_as(bool $auditor, string $script = 'index.php'): WP
 }
 
 /**
+ * The value at a path of keys through nested arrays, or null where the path ends early.
+ */
+function uamswp_auditor_role_at(mixed $value, int|string ...$path): mixed
+{
+    foreach ($path as $key) {
+        if (! is_array($value) || ! array_key_exists($key, $value)) {
+            return null;
+        }
+
+        $value = $value[$key];
+    }
+
+    return $value;
+}
+
+/**
+ * A value that must be an array: anything else stops the test with its type.
+ *
+ * @return array<array-key, mixed>
+ */
+function uamswp_auditor_role_array(mixed $value): array
+{
+    if (! is_array($value)) {
+        throw new RuntimeException('Expected an array, got '.get_debug_type($value).'.');
+    }
+
+    return $value;
+}
+
+/**
+ * A value that must be a string: anything else stops the test with its type.
+ */
+function uamswp_auditor_role_string(mixed $value): string
+{
+    return is_string($value) ? $value : throw new TypeError('Expected a string, got '.get_debug_type($value).'.');
+}
+
+/**
+ * A value as the text a stand-in prints: null is empty, a scalar is cast, anything else stops the test.
+ */
+function uamswp_auditor_role_text(mixed $value): string
+{
+    return match (true) {
+        $value === null => '',
+        is_scalar($value) => (string) $value,
+        default => throw new TypeError('Expected text, got '.get_debug_type($value).'.'),
+    };
+}
+
+/**
+ * A value that must be an instance of a class: anything else stops the test with its type.
+ *
+ * @template T of object
+ *
+ * @param  class-string<T>  $class
+ * @return T
+ */
+function uamswp_auditor_role_instance(mixed $value, string $class): object
+{
+    if (! $value instanceof $class) {
+        throw new RuntimeException('Expected '.$class.', got '.get_debug_type($value).'.');
+    }
+
+    return $value;
+}
+
+/**
  * Forget every class's per-request state.
  */
 function uamswp_auditor_role_reset(): void

@@ -127,7 +127,8 @@ fwrite(STDERR, sprintf("Inventoried %d site(s): %d target(s).\n", count($sites),
 
 // Sign in once; the logged-in cookie covers every site of a subdirectory network.
 $jar = tempnam(sys_get_temp_dir(), 'uamswp-walk-');
-$home = rtrim((string) ($inventories[0]['url'] ?? ''), '/');
+$inventoryUrl = $inventories[0]['url'] ?? '';
+$home = rtrim(is_string($inventoryUrl) ? $inventoryUrl : '', '/');
 
 $curl = static function (string $url, string $method, array $body) use ($jar, $insecure): array {
     $handle = curl_init($url);

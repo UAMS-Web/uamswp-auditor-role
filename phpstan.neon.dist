@@ -11,7 +11,7 @@ parameters:
         min: 80200
         max: 80400
 
-    level: 8
+    level: 9
 
     paths:
         - includes

@@ -31,6 +31,36 @@ abstract class IntegrationTestCase extends WP_UnitTestCase
     {
         return parent::factory();
     }
+
+    /**
+     * The value at a path of keys through nested arrays, or null where the path ends early.
+     */
+    protected static function value_at(mixed $value, int|string ...$path): mixed
+    {
+        foreach ($path as $key) {
+            if (! is_array($value) || ! array_key_exists($key, $value)) {
+                return null;
+            }
+
+            $value = $value[$key];
+        }
+
+        return $value;
+    }
+
+    /**
+     * A value that must be an array: anything else fails the test with its type.
+     *
+     * @return array<array-key, mixed>
+     */
+    protected static function as_array(mixed $value): array
+    {
+        if (! is_array($value)) {
+            throw new \UnexpectedValueException('Expected an array, got '.get_debug_type($value).'.');
+        }
+
+        return $value;
+    }
 }
 
 // cspell:ignore autoloaded

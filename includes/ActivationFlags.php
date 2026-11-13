@@ -69,9 +69,15 @@ final class ActivationFlags
     {
         $defaults = self::defaults();
         $added = apply_filters('uamswp_auditor_role_activation_flags', $defaults);
-        $added = is_array($added) ? array_filter($added, self::is_flag(...)) : [];
+        $flags = $defaults;
 
-        return array_values(array_unique(array_merge($defaults, $added)));
+        foreach (is_array($added) ? $added : [] as $entry) {
+            if (is_string($entry) && self::is_flag($entry)) {
+                $flags[] = $entry;
+            }
+        }
+
+        return array_values(array_unique($flags));
     }
 
     /**
@@ -85,8 +91,8 @@ final class ActivationFlags
     /**
      * Whether an entry names an option or a transient.
      */
-    private static function is_flag(mixed $entry): bool
+    private static function is_flag(string $entry): bool
     {
-        return is_string($entry) && preg_match('/^(option|transient):\S+$/', $entry) === 1;
+        return preg_match('/^(option|transient):\S+$/', $entry) === 1;
     }
 }

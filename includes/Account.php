@@ -215,7 +215,7 @@ final class Account
 
         check_admin_referer(self::NONCE, self::NONCE);
 
-        $date = isset($_POST[self::END_DATE]) ? self::clean_date(sanitize_text_field(wp_unslash($_POST[self::END_DATE]))) : '';
+        $date = isset($_POST[self::END_DATE]) && is_string($_POST[self::END_DATE]) ? self::clean_date(sanitize_text_field(wp_unslash($_POST[self::END_DATE]))) : '';
 
         if ($date === '') {
             delete_user_meta($user_id, self::END_DATE);

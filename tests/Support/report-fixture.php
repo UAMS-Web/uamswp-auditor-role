@@ -63,6 +63,34 @@ function uamswp_auditor_role_g4_report_teardown(): void
 }
 
 /**
+ * Note a switch_to_blog() or restore_current_blog() call, in order.
+ */
+function uamswp_auditor_role_g4_record_switch(int|string $entry): void
+{
+    $switches = $GLOBALS['uamswp_auditor_role_g4_switches'] ?? [];
+    $switches = is_array($switches) ? $switches : [];
+    $switches[] = $entry;
+    $GLOBALS['uamswp_auditor_role_g4_switches'] = $switches;
+}
+
+/**
+ * The statements the fake $wpdb prepared, in order.
+ *
+ * @return list<string>
+ */
+function uamswp_auditor_role_g4_prepared(): array
+{
+    $db = $GLOBALS['wpdb'] ?? null;
+    $prepared = is_object($db) && property_exists($db, 'prepared') ? $db->prepared : null;
+
+    if (! is_array($prepared)) {
+        throw new RuntimeException('The fake $wpdb has no prepared statements.');
+    }
+
+    return array_values(array_map(uamswp_auditor_role_string(...), $prepared));
+}
+
+/**
  * The fake install: two sites, or one.
  *
  * @param  array<int, list<mixed>|null>|null  $option_names  Option names per site, for the secret scan.
@@ -92,7 +120,11 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
     }
 
     $option_names ??= [1 => ['blogname', 'wp_mail_smtp', 'zz_api_key'], 2 => ['facetwp_license', 'blogname', 'wp_mail_smtp']];
-    $current = static fn (): int => $GLOBALS['uamswp_auditor_role_g4_site'];
+    $current = static function (): int {
+        $site = $GLOBALS['uamswp_auditor_role_g4_site'] ?? null;
+
+        return is_int($site) ? $site : throw new RuntimeException('The fake install has no current site.');
+    };
 
     Functions\when('is_multisite')->justReturn($multisite);
     Functions\when('is_subdomain_install')->justReturn($subdomain);
@@ -103,13 +135,13 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
         return array_map(static fn (int $id): object => (object) ['blog_id' => (string) $id], array_keys($sites));
     });
     Functions\when('switch_to_blog')->alias(static function (int $id): bool {
-        $GLOBALS['uamswp_auditor_role_g4_switches'][] = $id;
+        uamswp_auditor_role_g4_record_switch($id);
         $GLOBALS['uamswp_auditor_role_g4_site'] = $id;
 
         return true;
     });
     Functions\when('restore_current_blog')->alias(static function (): bool {
-        $GLOBALS['uamswp_auditor_role_g4_switches'][] = 'restore';
+        uamswp_auditor_role_g4_record_switch('restore');
         $GLOBALS['uamswp_auditor_role_g4_site'] = 1;
 
         return true;
@@ -161,7 +193,7 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
 
         public function prepare(string $query, mixed ...$args): string
         {
-            $this->prepared[] = $query.' | '.implode(', ', array_map(strval(...), $args));
+            $this->prepared[] = $query.' | '.implode(', ', array_map(static fn (mixed $arg): string => is_scalar($arg) ? (string) $arg : '', $args));
 
             return $query;
         }
