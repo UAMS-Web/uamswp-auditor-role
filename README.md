@@ -98,7 +98,7 @@ An uncovered mutant (no test reaches the line) and an untested one (a test reach
 
 Read a run before trusting it. `0 Mutations for 0 Files created` is a setup failure (a wrong `--path`, no PCOV, no covering test), never a pass, and `scripts/check-mutation-run.php <log>` fails on it. A mutant whose child process crashes is scored as killed, so a run that kills everything deserves a second look: `tests/bootstrap.php` carries the fix for the one such crash found so far, between Pest's mutation stream wrapper and Patchwork. A mutant that times out also reads as killed to Pest but fails the checker, so a test that calls back into the class under test fails on re-entry instead of recursing, and test stand-ins for the database fail on a read nobody queued instead of looping.
 
-The screen walk's classes in `tests/Walk/src/` are held to the same bar. CI's `mutate` job mutates the PHP files under `includes/` and `tests/Walk/src/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything.
+The screen walk's classes in `tests/Walk/src/` are held to the same bar. CI's `mutate` job mutates the PHP files under `includes/` and `tests/Walk/src/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything, and so does the weekly scheduled run (Mondays, on `main`), which catches decay no pull request touches.
 
 Both need a coverage driver. PCOV locally: `pecl install pcov`, or the extension Herd bundles.
 
