@@ -22,6 +22,7 @@
 declare(strict_types=1);
 
 use UAMSWeb\AuditorRole\Walk\BinlogWindow;
+use UAMSWeb\AuditorRole\Walk\Command;
 use UAMSWeb\AuditorRole\Walk\Report;
 use UAMSWeb\AuditorRole\Walk\Targets;
 use UAMSWeb\AuditorRole\Walk\Walker;
@@ -95,18 +96,14 @@ fwrite(STDERR, "Instrument check passed: the binary log shows a probe write.\n")
 
 // Inventory every site, as a super admin in an admin context.
 $run = static function (string ...$command) use ($root): string {
-    $process = proc_open(array_values($command), [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root);
+    $result = Command::run(array_values($command), $root);
 
-    if (! is_resource($process)) {
+    if ($result === null) {
         fwrite(STDERR, 'Could not run: '.implode(' ', $command)."\n");
         exit(2);
     }
 
-    $out = (string) stream_get_contents($pipes[1]);
-    stream_get_contents($pipes[2]);
-    proc_close($process);
-
-    return $out;
+    return $result['stdout'];
 };
 
 $sites = array_values(array_filter(array_map(trim(...), explode("\n", $run($wp, 'site', 'list', '--field=url')))));
