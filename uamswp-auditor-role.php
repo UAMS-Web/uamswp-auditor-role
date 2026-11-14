@@ -61,7 +61,8 @@ if (defined('UAMSWP_AUDITOR_ROLE_VERSION')) {
     return;
 }
 
-define('UAMSWP_AUDITOR_ROLE_VERSION', '0.3.0');
+// The header's Version is the only place the release number is written.
+define('UAMSWP_AUDITOR_ROLE_VERSION', get_file_data(__FILE__, ['Version' => 'Version'])['Version']);
 define('UAMSWP_AUDITOR_ROLE_FILE', __FILE__);
 
 require_once __DIR__.'/includes/autoload.php';
