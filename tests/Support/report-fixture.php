@@ -63,18 +63,48 @@ function uamswp_auditor_role_g4_report_teardown(): void
 }
 
 /**
+ * Note a switch_to_blog() or restore_current_blog() call, in order.
+ */
+function uamswp_auditor_role_g4_record_switch(int|string $entry): void
+{
+    $switches = $GLOBALS['uamswp_auditor_role_g4_switches'] ?? [];
+    $switches = is_array($switches) ? $switches : [];
+    $switches[] = $entry;
+    $GLOBALS['uamswp_auditor_role_g4_switches'] = $switches;
+}
+
+/**
+ * The statements the fake $wpdb prepared, in order.
+ *
+ * @return list<string>
+ */
+function uamswp_auditor_role_g4_prepared(): array
+{
+    $db = $GLOBALS['wpdb'] ?? null;
+    $prepared = is_object($db) && property_exists($db, 'prepared') ? $db->prepared : null;
+
+    if (! is_array($prepared)) {
+        throw new RuntimeException('The fake $wpdb has no prepared statements.');
+    }
+
+    return array_values(array_map(uamswp_auditor_role_string(...), $prepared));
+}
+
+/**
  * The fake install: two sites, or one.
  *
  * @param  array<int, list<mixed>|null>|null  $option_names  Option names per site, for the secret scan.
  * @param  list<mixed>|null  $network_names  Network option names, or null for a failed query.
+ * @param  mixed  $blog_public  The main site's `blog_public` option.
+ * @param  array<array-key, mixed>|null  $plugins  What `get_plugins()` returns, or the default list.
  */
-function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false, ?array $option_names = null, ?array $network_names = []): void
+function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false, ?array $option_names = null, ?array $network_names = [], mixed $blog_public = '1', ?array $plugins = null): void
 {
     $sites = [
         1 => [
             'home' => 'https://example.org/',
             'theme' => 'uams-2020',
-            'options' => ['blogname' => 'Main', 'blog_public' => '1', 'active_plugins' => [3 => 'gravityforms/gravityforms.php', 7 => 'acf/acf.php']],
+            'options' => ['blogname' => 'Main', 'blog_public' => $blog_public, 'active_plugins' => [3 => 'gravityforms/gravityforms.php', 7 => 'acf/acf.php']],
             'caps' => [...array_fill_keys(UAMSWP_AUDITOR_ROLE_G4_CORE_CAPS, true), 'gform_full_access' => true, 'edit_physicians' => true, 'disabled_cap' => false],
             'details' => ['registered' => '2020-01-01 00:00:00', 'last_updated' => '2026-11-01 00:00:00', 'public' => '1', 'archived' => '0', 'deleted' => '0', 'spam' => '0'],
         ],
@@ -92,7 +122,11 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
     }
 
     $option_names ??= [1 => ['blogname', 'wp_mail_smtp', 'zz_api_key'], 2 => ['facetwp_license', 'blogname', 'wp_mail_smtp']];
-    $current = static fn (): int => $GLOBALS['uamswp_auditor_role_g4_site'];
+    $current = static function (): int {
+        $site = $GLOBALS['uamswp_auditor_role_g4_site'] ?? null;
+
+        return is_int($site) ? $site : throw new RuntimeException('The fake install has no current site.');
+    };
 
     Functions\when('is_multisite')->justReturn($multisite);
     Functions\when('is_subdomain_install')->justReturn($subdomain);
@@ -103,13 +137,13 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
         return array_map(static fn (int $id): object => (object) ['blog_id' => (string) $id], array_keys($sites));
     });
     Functions\when('switch_to_blog')->alias(static function (int $id): bool {
-        $GLOBALS['uamswp_auditor_role_g4_switches'][] = $id;
+        uamswp_auditor_role_g4_record_switch($id);
         $GLOBALS['uamswp_auditor_role_g4_site'] = $id;
 
         return true;
     });
     Functions\when('restore_current_blog')->alias(static function (): bool {
-        $GLOBALS['uamswp_auditor_role_g4_switches'][] = 'restore';
+        uamswp_auditor_role_g4_record_switch('restore');
         $GLOBALS['uamswp_auditor_role_g4_site'] = 1;
 
         return true;
@@ -134,7 +168,7 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
     ][$name] ?? $default);
     Functions\when('get_super_admins')->justReturn([2 => 'root', 5 => 'ops']);
     Functions\when('get_current_network_id')->justReturn(1);
-    Functions\when('get_plugins')->justReturn(['gravityforms/gravityforms.php' => ['Version' => '2.9.1'], 'acf/acf.php' => ['Version' => 6], 'hello.php' => []]);
+    Functions\when('get_plugins')->justReturn($plugins ?? ['gravityforms/gravityforms.php' => ['Version' => '2.9.1'], 'acf/acf.php' => ['Version' => 6], 'hello.php' => []]);
     Functions\when('get_mu_plugins')->justReturn(['uamswp-auditor-role-loader.php' => []]);
     Functions\when('get_dropins')->justReturn(['sunrise.php' => []]);
     Functions\when('wp_get_themes')->justReturn(['uams-2020' => new stdClass, 'genesis' => new stdClass]);
@@ -151,6 +185,7 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
         /**
          * @param  array<int, list<mixed>|null>  $option_names
          * @param  list<mixed>|null  $network_names
+         * @param  Closure(): int  $current
          */
         public function __construct(private array $option_names, private readonly ?array $network_names, private readonly Closure $current) {}
 
@@ -161,7 +196,7 @@ function uamswp_auditor_role_g4_install(bool $multisite, bool $subdomain = false
 
         public function prepare(string $query, mixed ...$args): string
         {
-            $this->prepared[] = $query.' | '.implode(', ', array_map(strval(...), $args));
+            $this->prepared[] = $query.' | '.implode(', ', array_map(static fn (mixed $arg): string => is_scalar($arg) ? (string) $arg : '', $args));
 
             return $query;
         }

@@ -242,7 +242,7 @@ final class Uamswp_Auditor_Role_G2_Wpdb
     {
         $sql = str_replace(['%i', '%s'], ['`%s`', "'%s'"], $sql);
         $sql = str_replace("`'%s'`", '`%s`', $sql);
-        $this->prepared[] = vsprintf($sql, $args);
+        $this->prepared[] = vsprintf($sql, array_map(uamswp_auditor_role_text(...), $args));
 
         return $this->prepared[count($this->prepared) - 1];
     }

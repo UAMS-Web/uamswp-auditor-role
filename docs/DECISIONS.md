@@ -72,7 +72,7 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 - **`composer mutate`** runs Pest's `--mutate --everything --parallel --min=100 --path=includes`, so it exits non-zero on any mutant not killed. `--everything` because the tests do not declare `covers()`. A later `--path` scopes it to one class.
 - **A child-process fix in `tests/bootstrap.php`.** Pest swaps a mutant in through a `file://` stream wrapper, and Patchwork (Brain Monkey) wraps the same protocol. In a mutant's child the two collided on a directory call and the child fatal-errored before any test ran, and Pest scores a failed child as killed. Every mutant read as killed whatever the tests asserted. In a child, the bootstrap now turns Pest's wrapper off before Patchwork loads and loads the mutated copy through the plugin's class path. A planted mutant no test can see now survives, and a planted mutant a test asserts against is killed.
-- **The CI job mutates changed files only, on a push to `main` as well as on a pull request.** The shared template mutates everything on a push. Until each class reaches the bar under its own issue, that would hold `main` red for code no pull request touched. A manual run still mutates everything.
+- **The CI job mutates changed files only, on a push to `main` as well as on a pull request.** The shared template mutates everything on a push. Until each class reaches the bar under its own issue, that would hold `main` red for code no pull request touched. A manual run still mutates everything, and a weekly schedule (Mondays) runs the same full pass on `main` to catch decay no pull request touches (#42).
 - **The run is read by `scripts/check-mutation-run.php`**, not by Pest's exit status alone: it fails on zero mutants and on any untested or uncovered mutant. The `pest-testing` skill's checker it replaces is not synced to this repository.
 - **Linux only**, like every other job here.
 
@@ -189,10 +189,32 @@ Every entry heading is `## YYYY-MM-DD`, a space, and a short title. Leave exactl
 
 **Decision.**
 
-- **An Auditor can open the Plugins screen on a network that has not enabled the Plugins menu for site administrators.** For an Auditor's `activate_plugins` check, `MetaCaps::map()` drops the `manage_network_plugins` that core's `map_meta_cap()` adds for that network setting, so the check resolves to `activate_plugins`, which the role holds.
+- **An Auditor can open the Plugins screen on a network that has not enabled the Plugins menu for site administrators.** For an Auditor's `activate_plugins` check, `MetaCaps::map()` drops the `manage_network_plugins` that core's `map_meta_cap()` adds for that network setting, so the check resolves to `activate_plugins`, which the role holds. *Narrowed on 2026-11-12: the check passes only on the site's Plugins screen; see "The plugins check off the Plugins screen".*
 - **The screen stays a list.** `activate_plugin`, `deactivate_plugin` and `deactivate_plugins` stay denied, and the `install_`, `update_` and `delete_` families stay never granted, so no row action shows. The bulk "Activate" and "Deactivate" options, which core adds without a capability check, are removed for the role through `bulk_actions-plugins`. Network-active plugins, and inactive network-only ones, are listed for the role through `show_network_active_plugins`; core labels each "Network Active" or "Network Only" in place of its actions and gives it no bulk checkbox.
 - **Site administrators are unchanged**: the network setting still closes the screen to them.
 
 **Why.** An audit reads the plugin list, and `wp auditor discover` and `wp auditor network-export` give it only to someone with server access.
 
 **Rejected.** Keeping the earlier decision that the screen follows core (the list stays out of reach in the browser). Filtering the `menu_items` site option to add `plugins` in an Auditor session (it changes a network option's value for every reader in the request, not one capability check).
+
+## 2026-11-12 The plugins check off the Plugins screen (area: capabilities)
+
+**Decision.**
+
+- **An Auditor passes the `activate_plugins` check only on a site's Plugins screen** (`plugins.php`, not the network admin's), where `manage_network_plugins` is still dropped from it. On every other request the check is denied, on a single site and on a network with the Plugins menu enabled for site administrators as well, where the role's own `activate_plugins` had passed it everywhere since the role was built.
+- **Core's Plugins menu entry, and its Installed Plugins submenu entry, ask for `read` in an Auditor session**, so the entry shows on every screen and opens `plugins.php`, where the check passes.
+
+**Why.** Plugins read `activate_plugins` as "may act on plugins". WP Mail SMTP redirects such a user to its setup wizard while its activation flag is set, and deletes the flag first; the Auditor's delete is refused, so every main-site admin request redirected, and the screen walk loaded none of 38 screens (#84). A flag kept in an option with no expiry would redirect the Auditor until an administrator loaded an admin screen.
+
+**Rejected.** Keeping the check true everywhere and making known activation-redirect flags read as unset for an Auditor (each plugin with the pattern needs its own entry, and an unknown one is found only when it redirects). Leaving the role as it is and making the screen walk wait out the redirect (the defect stays for a flag with no expiry, and the walk stops showing it).
+
+## 2026-11-12 Plugin activation redirects keyed on a capability the role holds (area: third-party plugins)
+
+**Decision.**
+
+- **Listed activation-redirect flags read as `false` in an Auditor session** (`ActivationFlags`), through the `option_<name>` and `transient_<name>` filters, hooked late on `init`. The default list is SEOPress's `seopress_activated` option and WP Mail SMTP's `wp_mail_smtp_activation_redirect` transient (its redirect is keyed on `activate_plugins`, which an Auditor passes on the Plugins screen), and `uamswp_auditor_role_activation_flags` adds `option:<name>` or `transient:<name>` entries but cannot drop a default. Nothing is written, so the next administrator is still redirected.
+- **SEOPress's and WP Mail SMTP's setup wizards (`page:seopress-setup`, `page:wp-mail-smtp-setup-wizard`) are hidden screens.** Each saves its plugin's settings, and WP Mail SMTP's takes the mailer's credentials.
+
+**Why.** SEOPress redirects a user who can `manage_options` to its wizard while the option is `yes`, and deletes the option first. The role holds `manage_options` so settings screens can be read, and its delete is refused, so the redirect repeated on every admin screen until an administrator loaded one (#87). On the CI walk it sent all 38 of the main site's ordinary screens to the wizard.
+
+**Rejected.** Cancelling any redirect a plugin issues during `admin_init` on an Auditor's screen view (it reaches unknown plugins too, but cancels legitimate redirects with them). Taking SEOPress out of the CI walk (the defect stays on a real install).

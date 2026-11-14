@@ -23,7 +23,7 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'options.php', 'export.php', 'import.php', 'export-personal-data.php', 'erase-personal-data.php', 'site-health.php?tab=debug', 'options-connectors.php', 'customize.php',
     'edit-comments.php', 'site-editor.php', 'font-library.php',
     'page:wppusher', 'page:wppusher-plugins', 'page:wppusher-plugins-create', 'page:wppusher-themes', 'page:wppusher-themes-create', 'page:wppusher-settings',
-    'page:wp-mail-smtp', 'page:wp-mail-smtp-logs', 'page:wp-mail-smtp-reports', 'page:wp-mail-smtp-tools', 'page:formidable-smtp',
+    'page:wp-mail-smtp', 'page:wp-mail-smtp-logs', 'page:wp-mail-smtp-reports', 'page:wp-mail-smtp-tools', 'page:wp-mail-smtp-setup-wizard', 'page:formidable-smtp',
     'page:gf_entries', 'page:gf_settings', 'page:gf_export', 'page:gf_system_status', 'page:formidable-entries', 'page:formidable-settings', 'page:formidable-import',
     'edit.php?post_type=nf_sub', 'page:nf-submissions', 'page:nf-settings', 'page:nf-import-export', 'page:nf-system-status',
     'page:transients-manager', 'page:acfe-options',
@@ -37,7 +37,7 @@ const UAMSWP_AUDITOR_ROLE_G1_HIDDEN = [
     'edit-tags.php?taxonomy=acf-field-group-category', 'page:acf-tools', 'page:acfe-settings',
     'page:asp_main_settings', 'page:asp_index_table', 'page:asp_priorities', 'page:asp_statistics', 'page:asp_analytics', 'page:asp_cache_settings', 'page:asp_performance', 'page:asp_compatibility_settings', 'page:asp_maintenance',
     'page:ef-settings', 'page:ef-calendar-settings', 'page:ef-custom-status-settings', 'page:ef-dashboard-settings', 'page:ef-editorial-comments-settings', 'page:ef-editorial-metadata-settings', 'page:ef-notifications-settings', 'page:ef-story-budget-settings', 'page:ef-user-groups-settings',
-    'page:seopress-option', 'page:seopress-titles', 'page:seopress-xml-sitemap', 'page:seopress-social', 'page:seopress-instant-indexing', 'page:seopress-advanced', 'page:seopress-import-export', 'page:seopress-pro-page', 'page:seopress-schemas', 'page:seopress-redirections', 'page:seopress-broken-links',
+    'page:seopress-option', 'page:seopress-titles', 'page:seopress-xml-sitemap', 'page:seopress-social', 'page:seopress-instant-indexing', 'page:seopress-advanced', 'page:seopress-import-export', 'page:seopress-pro-page', 'page:seopress-schemas', 'page:seopress-redirections', 'page:seopress-broken-links', 'page:seopress-setup',
     'edit.php?post_type=seopress_404', 'edit.php?post_type=seopress_bot', 'edit.php?post_type=seopress_schemas',
     'page:genesis', 'page:genesis-import-export', 'page:seo-settings', 'page:genesis-getting-started', 'page:genesis-cpt-archive-*',
     'page:uamswp-settings', 'page:uams-search-site',
@@ -55,6 +55,7 @@ beforeEach(function (): void {
 
 it('hooks the menu, the dashboard and the Plugins screen filters last', function (): void {
     Actions\expectAdded('admin_menu')->once()->with([Screens::class, 'remove_menu_entries'], PHP_INT_MAX);
+    Actions\expectAdded('admin_menu')->once()->with([Screens::class, 'open_plugins_menu'], PHP_INT_MAX);
     Actions\expectAdded('wp_dashboard_setup')->once()->with([Screens::class, 'remove_dashboard_writers'], PHP_INT_MAX);
     Filters\expectAdded('bulk_actions-plugins')->once()->with([Screens::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
     Filters\expectAdded('show_network_active_plugins')->once()->with([Screens::class, 'show_network_active_plugins'], PHP_INT_MAX);
@@ -130,15 +131,15 @@ it('removes hidden entries from the menu for an Auditor, leaving malformed items
         50 => 'not an item',
     ];
     $GLOBALS['submenu'] = [
-        'tools.php' => [5 => ['Export', 'export', 'export.php'], 6 => ['Cron', 'manage_options', 'wp-crontrol'], 7 => ['Short']],
         'broken' => 'not a list',
+        'tools.php' => [5 => ['Export', 'export', 'export.php'], 6 => ['Cron', 'manage_options', 'wp-crontrol'], 7 => ['Short']],
     ];
 
     Screens::remove_menu_entries();
 
-    expect(array_keys($GLOBALS['menu']))->toBe([20, 30, 40, 50])
-        ->and(array_keys($GLOBALS['submenu']['tools.php']))->toBe([6, 7])
-        ->and($GLOBALS['submenu']['broken'])->toBe('not a list');
+    expect(array_keys(uamswp_auditor_role_array($GLOBALS['menu'])))->toBe([20, 30, 40, 50])
+        ->and(array_keys(uamswp_auditor_role_array(uamswp_auditor_role_at($GLOBALS, 'submenu', 'tools.php'))))->toBe([6, 7])
+        ->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'broken'))->toBe('not a list');
 });
 
 it('leaves a menu that is not a list alone', function (): void {
@@ -160,7 +161,7 @@ it('leaves the menu alone for another role', function (): void {
 
     Screens::remove_menu_entries();
 
-    expect($GLOBALS['menu'])->toHaveCount(1)->and($GLOBALS['submenu']['tools.php'])->toHaveCount(1);
+    expect($GLOBALS['menu'])->toHaveCount(1)->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'tools.php'))->toHaveCount(1);
 });
 
 it('takes the list from the filter, keeping only names, as a list', function (): void {
@@ -261,4 +262,55 @@ it('leaves the network-active answer alone for another role', function (mixed $s
     'hidden' => [false],
     'shown' => [true],
     'not a boolean' => [null],
+]);
+
+it('files core\'s Plugins menu entries under read for an Auditor, and nothing else', function (): void {
+    uamswp_auditor_role_as(true);
+    $GLOBALS['menu'] = [
+        60 => ['Appearance', 'switch_themes', 'themes.php'],
+        65 => ['Plugins', 'activate_plugins', 'plugins.php'],
+        66 => ['Other', 'activate_plugins', 'other.php'],
+        67 => 'not an item',
+    ];
+    $GLOBALS['submenu'] = [
+        'plugins.php' => [
+            5 => ['Installed Plugins', 'activate_plugins', 'plugins.php'],
+            10 => ['Add Plugin', 'install_plugins', 'plugin-install.php'],
+            12 => ['Settings', 'manage_options', 'plugins.php'],
+        ],
+        'tools.php' => [5 => ['Tools', 'activate_plugins', 'plugins.php']],
+    ];
+
+    Screens::open_plugins_menu();
+
+    expect(array_column(array_filter(uamswp_auditor_role_array($GLOBALS['menu']), is_array(...)), 1))->toBe(['switch_themes', 'read', 'activate_plugins'])
+        ->and(uamswp_auditor_role_at($GLOBALS, 'menu', 67))->toBe('not an item')
+        ->and(array_column(uamswp_auditor_role_array(uamswp_auditor_role_at($GLOBALS, 'submenu', 'plugins.php')), 1))->toBe(['read', 'install_plugins', 'manage_options'])
+        ->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'tools.php', 5, 1))->toBe('activate_plugins');
+});
+
+it('leaves the Plugins menu entries alone for another role', function (): void {
+    uamswp_auditor_role_as(false);
+    $GLOBALS['menu'] = [65 => ['Plugins', 'activate_plugins', 'plugins.php']];
+    $GLOBALS['submenu'] = ['plugins.php' => [5 => ['Installed Plugins', 'activate_plugins', 'plugins.php']]];
+
+    Screens::open_plugins_menu();
+
+    expect(uamswp_auditor_role_at($GLOBALS, 'menu', 65, 1))->toBe('activate_plugins')
+        ->and(uamswp_auditor_role_at($GLOBALS, 'submenu', 'plugins.php', 5, 1))->toBe('activate_plugins');
+});
+
+it('opens the Plugins menu with no submenu, and with none at all', function (mixed $submenu): void {
+    uamswp_auditor_role_as(true);
+    $GLOBALS['menu'] = [65 => ['Plugins', 'activate_plugins', 'plugins.php']];
+    $GLOBALS['submenu'] = $submenu;
+
+    Screens::open_plugins_menu();
+
+    expect(uamswp_auditor_role_at($GLOBALS, 'menu', 65, 1))->toBe('read')
+        ->and($GLOBALS['submenu'])->toBe($submenu);
+})->with([
+    'no menus' => [null],
+    'no Plugins submenu' => [['tools.php' => []]],
+    'a Plugins submenu that is not a list' => [['plugins.php' => 'x']],
 ]);

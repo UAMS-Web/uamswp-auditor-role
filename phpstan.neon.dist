@@ -11,7 +11,7 @@ parameters:
         min: 80200
         max: 80400
 
-    level: 8
+    level: 10
 
     paths:
         - includes
@@ -57,6 +57,13 @@ parameters:
             message: '#of internal class Pest\\#'
             path: tests
             reportUnmatched: false
+        # Pest runs the Mockery expectation count through the test case's own
+        # counter. PHPUnit tags `addToAssertionCount()` @internal, and no public
+        # API adds to the count from a Pest hook, so tests/Pest.php is the one caller.
+        -
+            identifier: method.internal
+            message: '#addToAssertionCount\(\)#'
+            path: tests/Pest.php
         # The PHP floor guard in the main file: PHPStan analyzes at the floor, so
         # the guard is always false to the analyzer, but it exists for a site
         # downgraded underneath an already-active plugin.

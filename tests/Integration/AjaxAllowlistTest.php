@@ -168,11 +168,14 @@ final class AjaxAllowlistTest extends WP_Ajax_UnitTestCase
             // test handler moves the buffered output to _last_response.
         }
 
-        $response = json_decode($this->last_response(), true);
+        $decoded = json_decode($this->last_response(), true);
 
-        $this->assertIsArray($response);
-        $this->assertFalse($response['success']);
-        $this->assertSame('uamswp_auditor_role_read_only', $response['data']['code']);
+        $this->assertIsArray($decoded);
+
+        $data = $decoded['data'] ?? null;
+
+        $this->assertFalse($decoded['success'] ?? null);
+        $this->assertSame('uamswp_auditor_role_read_only', is_array($data) ? ($data['code'] ?? null) : null);
         $this->assertSame('ajax:gf_save_form', RequestGuard::refusal());
     }
 

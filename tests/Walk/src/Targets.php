@@ -2,7 +2,8 @@
 
 /**
  * Turns site inventories (from tests/Walk/enumerate.php) into the requests the
- * walk makes: each admin menu slug on its own site, and each distinct
+ * walk makes: each admin menu slug on its own site, then each script entry of
+ * the hidden-screen list that the menu did not already give, and each distinct
  * admin-ajax action once, on the first site that registers it.
  */
 
@@ -13,7 +14,7 @@ namespace UAMSWeb\AuditorRole\Walk;
 final class Targets
 {
     /**
-     * @param  list<array<mixed>>  $inventories  Each with `admin_url`, `menu` and `ajax`; anything else is ignored.
+     * @param  list<array<mixed>>  $inventories  Each with `admin_url`, `menu`, `hidden` and `ajax`; anything else is ignored.
      * @return list<array{kind: string, label: string, url: string, method: string, body: array<string, string>}>
      */
     public static function from_inventories(array $inventories): array
@@ -38,6 +39,19 @@ final class Targets
                 }
             }
 
+            // The hidden list's script entries, so a hidden screen with no menu
+            // item on this site is requested too. A `page:` entry is left out:
+            // a page no plugin registered gets core's refusal, which says
+            // nothing about the guard.
+            foreach (is_array($inventory['hidden'] ?? null) ? $inventory['hidden'] : [] as $entry) {
+                $url = is_string($entry) ? self::hidden_url($admin, $entry) : null;
+
+                if ($url !== null && ! in_array($url, $seen, true)) {
+                    $seen[] = $url;
+                    $targets[] = ['kind' => 'screen', 'label' => $url, 'url' => $url, 'method' => 'GET', 'body' => []];
+                }
+            }
+
             foreach (is_array($inventory['ajax'] ?? null) ? $inventory['ajax'] : [] as $action) {
                 if (is_string($action) && $action !== '' && ! in_array($action, $ajax_seen, true)) {
                     $ajax_seen[] = $action;
@@ -47,6 +61,15 @@ final class Targets
         }
 
         return $targets;
+    }
+
+    /**
+     * The admin URL a hidden-list entry opens, or null for one that is not a
+     * script entry (`<script>.php`, with an optional query).
+     */
+    public static function hidden_url(string $admin, string $entry): ?string
+    {
+        return preg_match('#^[\w\-]+\.php(\?.*)?$#', $entry) === 1 ? $admin.$entry : null;
     }
 
     /**

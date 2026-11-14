@@ -68,7 +68,12 @@ function uamswp_auditor_role_g3_formatted(): array
 {
     $call = uamswp_auditor_role_g3_formatted_calls()[0];
 
-    return [(string) $call[0], array_values((array) $call[1]), array_values((array) $call[2])];
+    $rows = array_map(
+        uamswp_auditor_role_string_map(...),
+        array_values(uamswp_auditor_role_array($call[1])),
+    );
+
+    return [uamswp_auditor_role_text($call[0]), $rows, array_map(uamswp_auditor_role_text(...), array_values(uamswp_auditor_role_array($call[2])))];
 }
 
 it('lists rows newest first in the format asked for, with every column', function (string $format): void {
@@ -124,7 +129,7 @@ it('refuses a filter it cannot read, before reading the log', function (array $a
     Functions\when('get_user_by')->justReturn(false);
     Functions\when('get_userdata')->justReturn(false);
 
-    expect(uamswp_auditor_role_g3_run(new LogCommand, 'list', $assoc))->toBe($error)
+    expect(uamswp_auditor_role_g3_run(new LogCommand, 'list', uamswp_auditor_role_string_map($assoc)))->toBe($error)
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe([]);
 })->with([
     'unknown login' => [['auditor' => 'nobody'], 'No such auditor: nobody'],

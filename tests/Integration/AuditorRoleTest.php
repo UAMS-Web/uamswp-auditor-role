@@ -119,7 +119,7 @@ final class AuditorRoleTest extends IntegrationTestCase
 
     public function test_each_statement_type_is_refused_for_an_auditor(): void
     {
-        global $wpdb;
+        $wpdb = self::database();
 
         wp_set_current_user($this->auditor);
         $wpdb->suppress_errors(true);
@@ -131,7 +131,7 @@ final class AuditorRoleTest extends IntegrationTestCase
             $wpdb->prepare('REPLACE INTO %i (option_name, option_value) VALUES (%s, %s)', $wpdb->options, 'uamswp_x', 'x'),
             'CREATE TABLE uamswp_probe (id int)',
         ] as $query) {
-            $this->assertFalse($wpdb->query($query), $query); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            $this->assertFalse($wpdb->query(self::as_string($query)), self::as_string($query)); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         }
 
         $this->assertNotFalse($wpdb->get_var($wpdb->prepare('SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, 'blogname')));
@@ -181,7 +181,7 @@ final class AuditorRoleTest extends IntegrationTestCase
         $read = rest_do_request(new \WP_REST_Request('GET', '/wp/v2/posts'));
 
         $this->assertSame(403, $write->get_status());
-        $this->assertSame('uamswp_auditor_role_read_only', $write->get_data()['code']);
+        $this->assertSame('uamswp_auditor_role_read_only', self::value_at($write->get_data(), 'code'));
         $this->assertSame(200, $read->get_status());
     }
 

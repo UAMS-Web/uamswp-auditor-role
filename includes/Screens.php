@@ -56,6 +56,8 @@ final class Screens
             'page:wp-mail-smtp-logs',
             'page:wp-mail-smtp-reports',
             'page:wp-mail-smtp-tools',
+            // WP Mail SMTP's setup wizard, which takes the mailer's credentials and saves them.
+            'page:wp-mail-smtp-setup-wizard',
             'page:formidable-smtp',
             // Form entries, form settings with API and reCAPTCHA keys, and form exports.
             'page:gf_entries',
@@ -136,6 +138,8 @@ final class Screens
             'page:seopress-schemas',
             'page:seopress-redirections',
             'page:seopress-broken-links',
+            // SEOPress's setup wizard, which saves its settings.
+            'page:seopress-setup',
             'edit.php?post_type=seopress_404',
             'edit.php?post_type=seopress_bot',
             'edit.php?post_type=seopress_schemas',
@@ -176,6 +180,7 @@ final class Screens
     public static function boot(): void
     {
         add_action('admin_menu', [self::class, 'remove_menu_entries'], PHP_INT_MAX);
+        add_action('admin_menu', [self::class, 'open_plugins_menu'], PHP_INT_MAX);
         add_action('wp_dashboard_setup', [self::class, 'remove_dashboard_writers'], PHP_INT_MAX);
         add_filter('bulk_actions-plugins', [self::class, 'remove_plugin_bulk_actions'], PHP_INT_MAX);
         add_filter('show_network_active_plugins', [self::class, 'show_network_active_plugins'], PHP_INT_MAX);
@@ -342,11 +347,17 @@ final class Screens
 
         if (is_array($submenu)) {
             foreach ($submenu as $parent => $items) {
-                foreach (is_array($items) ? $items : [] as $index => $item) {
+                if (! is_array($items)) {
+                    continue;
+                }
+
+                foreach ($items as $index => $item) {
                     if (self::is_hidden_item($item)) {
-                        unset($submenu[$parent][$index]);
+                        unset($items[$index]);
                     }
                 }
+
+                $submenu[$parent] = $items;
             }
         }
 
@@ -357,6 +368,55 @@ final class Screens
                 }
             }
         }
+    }
+
+    /**
+     * Keep core's Plugins menu entry for an Auditor on every screen. Core files
+     * it under `activate_plugins`, which MetaCaps passes for an Auditor only on
+     * the Plugins screen, so the entry asks for `read` instead. The screen
+     * itself still checks `activate_plugins`. WordPress keeps the capability at
+     * index 1 and the slug at index 2, and drops the entries a user cannot open
+     * after `admin_menu`.
+     */
+    public static function open_plugins_menu(): void
+    {
+        global $menu, $submenu;
+
+        if (! Session::is_auditor()) {
+            return;
+        }
+
+        if (is_array($menu)) {
+            foreach ($menu as $index => $item) {
+                if (is_array($item) && self::is_core_plugins_item($item)) {
+                    $item[1] = 'read';
+                    $menu[$index] = $item;
+                }
+            }
+        }
+
+        if (is_array($submenu) && is_array($submenu['plugins.php'] ?? null)) {
+            $items = $submenu['plugins.php'];
+
+            foreach ($items as $index => $item) {
+                if (is_array($item) && self::is_core_plugins_item($item)) {
+                    $item[1] = 'read';
+                    $items[$index] = $item;
+                }
+            }
+
+            $submenu['plugins.php'] = $items;
+        }
+    }
+
+    /**
+     * Whether a menu or submenu item is core's entry for the Plugins screen.
+     *
+     * @param  array<array-key, mixed>  $item
+     */
+    private static function is_core_plugins_item(array $item): bool
+    {
+        return ($item[1] ?? null) === 'activate_plugins' && ($item[2] ?? null) === 'plugins.php';
     }
 
     /**

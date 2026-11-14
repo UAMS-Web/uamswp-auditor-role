@@ -84,17 +84,17 @@ final class ScreensTest extends IntegrationTestCase
         $this->build_menu();
         Screens::remove_menu_entries();
 
-        $this->assertSame(['tools.php'], array_column($GLOBALS['menu'], 2));
-        $this->assertSame(['wp-crontrol'], array_column($GLOBALS['submenu']['tools.php'], 2));
-        $this->assertSame([], $GLOBALS['submenu']['admin.php']);
+        $this->assertSame(['tools.php'], array_column(self::as_array($GLOBALS['menu']), 2));
+        $this->assertSame(['wp-crontrol'], array_column(self::as_array(self::value_at($GLOBALS, 'submenu', 'tools.php')), 2));
+        $this->assertSame([], self::value_at($GLOBALS, 'submenu', 'admin.php'));
 
         Session::reset();
         wp_set_current_user($this->admin);
         $this->build_menu();
         Screens::remove_menu_entries();
 
-        $this->assertSame(['wppusher', 'tools.php'], array_column($GLOBALS['menu'], 2));
-        $this->assertCount(2, $GLOBALS['submenu']['tools.php']);
+        $this->assertSame(['wppusher', 'tools.php'], array_column(self::as_array($GLOBALS['menu']), 2));
+        $this->assertCount(2, self::as_array(self::value_at($GLOBALS, 'submenu', 'tools.php')));
     }
 
     public function test_a_hidden_screen_is_refused_by_direct_url_for_an_auditor(): void
@@ -126,7 +126,7 @@ final class ScreensTest extends IntegrationTestCase
 
     public function test_removing_an_entry_through_the_filter_opens_that_screen(): void
     {
-        $open = static fn (array $hidden): array => array_values(array_diff($hidden, ['page:gf_entries', 'export.php']));
+        $open = static fn (array $hidden): array => array_values(array_filter($hidden, static fn (mixed $entry): bool => ! in_array($entry, ['page:gf_entries', 'export.php'], true)));
         add_filter(Screens::FILTER, $open);
 
         wp_set_current_user($this->auditor);
@@ -138,8 +138,8 @@ final class ScreensTest extends IntegrationTestCase
 
         $this->build_menu();
         Screens::remove_menu_entries();
-        $this->assertSame(['export.php', 'wp-crontrol'], array_column($GLOBALS['submenu']['tools.php'], 2));
-        $this->assertSame(['gf_entries'], array_column($GLOBALS['submenu']['admin.php'], 2));
+        $this->assertSame(['export.php', 'wp-crontrol'], array_column(self::as_array(self::value_at($GLOBALS, 'submenu', 'tools.php')), 2));
+        $this->assertSame(['gf_entries'], array_column(self::as_array(self::value_at($GLOBALS, 'submenu', 'admin.php')), 2));
 
         remove_filter(Screens::FILTER, $open);
     }

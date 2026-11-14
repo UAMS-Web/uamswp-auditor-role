@@ -1,8 +1,8 @@
 <?php
 
 /**
- * The screen walk (#19): sign in as an Auditor, visit every admin menu slug of
- * every site and every admin-ajax action once, and fail on any database write
+ * The screen walk (#19): sign in as an Auditor, visit every admin menu slug and
+ * hidden script screen of every site and every admin-ajax action once, and fail on any database write
  * other than the plugin's own activity log.
  *
  * Writes are read from MySQL's binary log, outside WordPress, so a write that
@@ -22,6 +22,7 @@
 declare(strict_types=1);
 
 use UAMSWeb\AuditorRole\Walk\BinlogWindow;
+use UAMSWeb\AuditorRole\Walk\Command;
 use UAMSWeb\AuditorRole\Walk\Report;
 use UAMSWeb\AuditorRole\Walk\Targets;
 use UAMSWeb\AuditorRole\Walk\Walker;
@@ -58,7 +59,19 @@ $query = static function (string $sql) use ($db): array {
         throw new RuntimeException($e->getMessage(), 0, $e);
     }
 
-    return $result instanceof mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $rows = [];
+
+    foreach ($result instanceof mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [] as $row) {
+        $keyed = [];
+
+        foreach ($row as $column => $value) {
+            $keyed[(string) $column] = $value;
+        }
+
+        $rows[] = $keyed;
+    }
+
+    return $rows;
 };
 
 // Prove the instrument sees a write before trusting an empty window.
@@ -83,18 +96,14 @@ fwrite(STDERR, "Instrument check passed: the binary log shows a probe write.\n")
 
 // Inventory every site, as a super admin in an admin context.
 $run = static function (string ...$command) use ($root): string {
-    $process = proc_open(array_values($command), [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root);
+    $result = Command::run(array_values($command), $root);
 
-    if (! is_resource($process)) {
+    if ($result === null) {
         fwrite(STDERR, 'Could not run: '.implode(' ', $command)."\n");
         exit(2);
     }
 
-    $out = (string) stream_get_contents($pipes[1]);
-    stream_get_contents($pipes[2]);
-    proc_close($process);
-
-    return $out;
+    return $result['stdout'];
 };
 
 $sites = array_values(array_filter(array_map(trim(...), explode("\n", $run($wp, 'site', 'list', '--field=url')))));
@@ -127,9 +136,10 @@ fwrite(STDERR, sprintf("Inventoried %d site(s): %d target(s).\n", count($sites),
 
 // Sign in once; the logged-in cookie covers every site of a subdirectory network.
 $jar = tempnam(sys_get_temp_dir(), 'uamswp-walk-');
-$home = rtrim((string) ($inventories[0]['url'] ?? ''), '/');
+$inventoryUrl = $inventories[0]['url'] ?? '';
+$home = rtrim(is_string($inventoryUrl) ? $inventoryUrl : '', '/');
 
-$curl = static function (string $url, string $method, array $body) use ($jar, $insecure): int {
+$curl = static function (string $url, string $method, array $body) use ($jar, $insecure): array {
     $handle = curl_init($url);
     curl_setopt_array($handle, [
         CURLOPT_RETURNTRANSFER => true,
@@ -147,11 +157,12 @@ $curl = static function (string $url, string $method, array $body) use ($jar, $i
         curl_setopt($handle, CURLOPT_POSTFIELDS, http_build_query($body));
     }
 
-    curl_exec($handle);
+    $response = curl_exec($handle);
     $status = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+    $location = curl_getinfo($handle, CURLINFO_REDIRECT_URL);
     curl_close($handle);
 
-    return $status;
+    return ['status' => $status, 'body' => is_string($response) ? $response : '', 'location' => is_string($location) ? $location : ''];
 };
 
 $login_path = is_string($options['login-path'] ?? null) ? $options['login-path'] : '/wp-login.php';
@@ -166,7 +177,7 @@ $site_window = new BinlogWindow($query, $need('db-name'));
 
 $walker = new Walker(
     $site_window,
-    static fn (array $target): int => $curl($target['url'], $target['method'], $target['body']),
+    static fn (array $target): array => $curl($target['url'], $target['method'], $target['body']),
     static function () use ($settle): void {
         usleep($settle * 1000);
     },
@@ -181,8 +192,9 @@ $results = $walker->walk($targets, static function (int $done, int $total, array
 $markdown = Report::markdown($results);
 $report = $options['report'] ?? null;
 
+// The file also lists every target; the console keeps the summary only.
 if (is_string($report) && $report !== '') {
-    file_put_contents($report, $markdown);
+    file_put_contents($report, $markdown."\n".Report::targets($results));
 }
 
 echo $markdown;

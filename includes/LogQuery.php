@@ -27,7 +27,7 @@ final class LogQuery
     /**
      * Clean a set of filters: a user ID, a date range and an event type.
      *
-     * @param  array<string, mixed>  $raw
+     * @param  array<array-key, mixed>  $raw
      * @return array{user_id: int, from: string, to: string, event: string}
      */
     public static function filters(array $raw): array
@@ -61,7 +61,7 @@ final class LogQuery
      * Dates are whole days in UTC, the time the log stores.
      *
      * @param  array{user_id: int, from: string, to: string, event: string}  $filters
-     * @return array{0: string, 1: list<int|string>}
+     * @return array{0: literal-string, 1: list<int|string>}
      */
     public static function where(array $filters): array
     {
@@ -99,7 +99,7 @@ final class LogQuery
      */
     public static function rows(array $filters, int $limit, int $offset = 0): array
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         [$where, $values] = self::where($filters);
 
@@ -107,7 +107,21 @@ final class LogQuery
         $sql = "SELECT * FROM %i WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d";
         $rows = $wpdb->get_results($wpdb->prepare($sql, Log::table(), ...array_merge($values, [$limit, $offset])), ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 
-        return is_array($rows) ? array_values($rows) : [];
+        $result = [];
+
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            $columns = [];
+
+            foreach ($row as $name => $value) {
+                if (is_string($name)) {
+                    $columns[$name] = is_scalar($value) ? (string) $value : '';
+                }
+            }
+
+            $result[] = $columns;
+        }
+
+        return $result;
     }
 
     /**
@@ -117,7 +131,7 @@ final class LogQuery
      */
     public static function count(array $filters): int
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         [$where, $values] = self::where($filters);
 
@@ -133,14 +147,19 @@ final class LogQuery
      */
     public static function users(): array
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         $rows = $wpdb->get_results($wpdb->prepare('SELECT DISTINCT user_id, user_login FROM %i ORDER BY user_login', Log::table()), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
         $users = [];
 
         foreach (is_array($rows) ? $rows : [] as $row) {
-            $users[(int) $row['user_id']] = (string) $row['user_login'];
+            $id = $row['user_id'] ?? null;
+            $login = $row['user_login'] ?? null;
+
+            if (is_numeric($id) && is_scalar($login)) {
+                $users[(int) $id] = (string) $login;
+            }
         }
 
         return $users;

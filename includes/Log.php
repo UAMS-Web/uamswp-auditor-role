@@ -65,7 +65,7 @@ final class Log
      */
     public static function table(): string
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         return $wpdb->prefix.self::TABLE;
     }
@@ -85,7 +85,7 @@ final class Log
      */
     public static function install(): void
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         DatabaseGuard::bypass(static function () use ($wpdb): void {
             if (! function_exists('dbDelta')) {
@@ -124,14 +124,14 @@ final class Log
      */
     public static function write(string $event, int $user_id, string $login, string $detail = ''): void
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         if (get_option(self::OPTION) !== self::SCHEMA) {
             return;
         }
 
-        $method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD']))) : '';
-        $uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? strtoupper(sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD']))) : '';
+        $uri = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
 
         DatabaseGuard::bypass(static function () use ($wpdb, $event, $user_id, $login, $detail, $method, $uri): void {
             $wpdb->insert(self::table(), [
@@ -262,7 +262,7 @@ final class Log
     public static function screen(): string
     {
         // A read for the log label only; the value is sanitized and never acted on.
-        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
         return Screens::label(Session::script(), $page === '' ? [] : ['page' => $page]);
     }

@@ -27,8 +27,9 @@ The compensating controls: an activity log per site (`Log`), an administrator-on
 | --- | --- |
 | `uamswp_auditor_role_capabilities` | The capabilities the role holds. A never-granted one is dropped. |
 | `uamswp_auditor_role_denied_caps` | Adds capabilities denied to the role. |
-| `uamswp_auditor_role_hidden_screens` | The hidden screens: `page:<slug>` or `<script>.php[?param=value]`. |
+| `uamswp_auditor_role_hidden_screens` | The hidden screens: `page:<slug>`, `page:<prefix>*` (every page slug that starts with the prefix) or `<script>.php[?param=value]`. |
 | `uamswp_auditor_role_hidden_dashboard_widgets` | Dashboard widgets removed for the role. |
+| `uamswp_auditor_role_activation_flags` | Adds plugin activation-redirect flags that read as unset for the role: `option:<name>` or `transient:<name>`. |
 | `uamswp_auditor_role_ajax_actions` | The allowlisted AJAX actions. Add one only after reading what it does. |
 | `uamswp_auditor_role_get_actions` | The `action` values an admin GET may carry. |
 | `uamswp_auditor_role_allow_query` | Lets one refused statement through; see [`docs/WRITES-ON-LOAD.md`](docs/WRITES-ON-LOAD.md). |
@@ -97,7 +98,7 @@ An uncovered mutant (no test reaches the line) and an untested one (a test reach
 
 Read a run before trusting it. `0 Mutations for 0 Files created` is a setup failure (a wrong `--path`, no PCOV, no covering test), never a pass, and `scripts/check-mutation-run.php <log>` fails on it. A mutant whose child process crashes is scored as killed, so a run that kills everything deserves a second look: `tests/bootstrap.php` carries the fix for the one such crash found so far, between Pest's mutation stream wrapper and Patchwork. A mutant that times out also reads as killed to Pest but fails the checker, so a test that calls back into the class under test fails on re-entry instead of recursing, and test stand-ins for the database fail on a read nobody queued instead of looping.
 
-The screen walk's classes in `tests/Walk/src/` are held to the same bar. CI's `mutate` job mutates the PHP files under `includes/` and `tests/Walk/src/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything.
+The screen walk's classes in `tests/Walk/src/` are held to the same bar. CI's `mutate` job mutates the PHP files under `includes/` and `tests/Walk/src/` that a pull request (or a push to `main`) adds or changes, and fails on any mutant not killed. A manual run of the workflow mutates everything, and so does the weekly scheduled run (Mondays, on `main`), which catches decay no pull request touches.
 
 Both need a coverage driver. PCOV locally: `pecl install pcov`, or the extension Herd bundles.
 
@@ -126,6 +127,16 @@ Sites deploy a branch through WP Pusher, so nothing is built at deploy time and 
 ## The download keep-list
 
 A branch download is what WP Pusher installs, and a server may serve the plugin folder for every file type but PHP. `.gitattributes` therefore excludes everything and names back only what the plugin runs. When a runtime folder is added, add a `-export-ignore` line for it; `composer check:archive` and CI fail a change that ships anything else.
+
+## Credits
+
+Developed and maintained by UAMS Web Services.
+
+Developers:
+
+- Josh Daugherty
+- Todd McKee
+- Brent Passmore
 
 ## Licence
 

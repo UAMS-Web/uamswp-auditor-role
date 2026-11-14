@@ -77,10 +77,10 @@ it('denies a check that maps to a never-granted capability', function (): void {
     expect(MetaCaps::map(['read', 'delete_others_posts'], 'some_plugin_meta_cap', 7, []))->toBe(['do_not_allow']);
 });
 
-it('passes a read capability for an Auditor, as a list', function (): void {
+it('passes a read capability for an Auditor, as a list of strings', function (): void {
     uamswp_auditor_role_user(true);
 
-    expect(MetaCaps::map(['a' => 'edit_posts', 'b' => 7], 'edit_posts', 7, []))->toBe(['edit_posts', 7]);
+    expect(MetaCaps::map(['a' => 'edit_posts', 'b' => 7], 'edit_posts', 7, []))->toBe(['edit_posts']);
 });
 
 it('lets an Auditor open only its own profile', function (mixed $args, array $expected): void {
@@ -154,14 +154,29 @@ it('holds the list once init has run, and not before', function (): void {
     expect(MetaCaps::denied())->toContain('held');
 });
 
-it('lets an Auditor list plugins past the network setting, in either order core lists the caps', function (array $caps): void {
-    uamswp_auditor_role_as(true);
+it('lets an Auditor list plugins past the network setting on the Plugins screen, in either order core lists the caps', function (array $caps): void {
+    uamswp_auditor_role_as(true, 'plugins.php');
+    Functions\when('is_network_admin')->justReturn(false);
 
     expect(MetaCaps::map($caps, 'activate_plugins', 7, []))->toBe(['activate_plugins']);
 })->with([
     'core order' => [['activate_plugins', 'manage_network_plugins']],
     'reversed' => [['manage_network_plugins', 'activate_plugins']],
     'the network setting on' => [['activate_plugins']],
+]);
+
+it('denies an Auditor the plugins check off the site\'s Plugins screen, with the network setting on or off', function (string $script, bool $network, array $caps): void {
+    uamswp_auditor_role_as(true, $script);
+    Functions\when('is_network_admin')->justReturn($network);
+
+    expect(MetaCaps::map($caps, 'activate_plugins', 7, []))->toBe(['do_not_allow']);
+})->with([
+    'the dashboard' => ['index.php', false, ['activate_plugins', 'manage_network_plugins']],
+    'a plugin\'s screen' => ['admin.php', false, ['activate_plugins', 'manage_network_plugins']],
+    'admin-ajax.php' => ['admin-ajax.php', false, ['activate_plugins', 'manage_network_plugins']],
+    'the network\'s Plugins screen' => ['plugins.php', true, ['activate_plugins', 'manage_network_plugins']],
+    'the dashboard, the network setting on or a single site' => ['index.php', false, ['activate_plugins']],
+    'the network\'s Plugins screen, the network setting on' => ['plugins.php', true, ['activate_plugins']],
 ]);
 
 it('still denies a single plugin activation, deactivation and the network capability itself', function (string $cap, array $caps): void {

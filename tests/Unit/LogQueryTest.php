@@ -40,7 +40,7 @@ it('lists the columns in export order', function (): void {
 });
 
 it('cleans filters to a fixed shape', function (array $raw, array $clean): void {
-    expect(LogQuery::filters($raw))->toBe($clean);
+    expect(LogQuery::filters(uamswp_auditor_role_string_keyed($raw)))->toBe($clean);
 })->with([
     'every filter' => [['user_id' => '5', 'from' => '2026-11-01', 'to' => '2026-01-31', 'event' => 'refused'], ['user_id' => 5, 'from' => '2026-11-01', 'to' => '2026-01-31', 'event' => 'refused']],
     'none' => [[], ['user_id' => 0, 'from' => '', 'to' => '', 'event' => '']],
@@ -74,8 +74,8 @@ it('accepts each event the log records', function (string $event): void {
 
 it('builds the WHERE clause from placeholders only', function (array $filters, string $where, array $values): void {
     // Each dataset's filters are already clean, so filters() hands them back unchanged.
-    expect(LogQuery::filters($filters))->toBe($filters)
-        ->and(LogQuery::where(LogQuery::filters($filters)))->toBe([$where, $values]);
+    expect(LogQuery::filters(uamswp_auditor_role_string_keyed($filters)))->toBe($filters)
+        ->and(LogQuery::where(LogQuery::filters(uamswp_auditor_role_string_keyed($filters))))->toBe([$where, $values]);
 })->with([
     'every filter' => [['user_id' => 5, 'from' => '2026-11-01', 'to' => '2026-11-05', 'event' => 'view'], '1=1 AND user_id = %d AND logged_at >= %s AND logged_at <= %s AND event = %s', [5, '2026-11-01 00:00:00', '2026-11-05 23:59:59', 'view']],
     'user 1' => [['user_id' => 1, 'from' => '', 'to' => '', 'event' => ''], '1=1 AND user_id = %d', [1]],
@@ -89,6 +89,12 @@ it('reads matching rows newest first, a page at a time', function (): void {
 
     expect($rows)->toBe([uamswp_auditor_role_g3_row(2), uamswp_auditor_role_g3_row(1)])
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe(["SELECT * FROM `wp_uamswp_auditor_log` WHERE 1=1 AND user_id = 5 AND event = 'view' ORDER BY id DESC LIMIT 50 OFFSET 100"]);
+});
+
+it('reads every column of a row as a string, and a column with no scalar value as empty', function (): void {
+    uamswp_auditor_role_g3_db()->results = [[['id' => 9, 'blog_id' => 1.5, 'detail' => null, 'event' => ['x'], 'method' => true, 4 => 'no name']]];
+
+    expect(LogQuery::rows(LogQuery::filters([]), 10))->toBe([['id' => '9', 'blog_id' => '1.5', 'detail' => '', 'event' => '', 'method' => '1']]);
 });
 
 it('reads from the first row by default', function (): void {
@@ -117,6 +123,20 @@ it('lists the users in the log, by ID', function (): void {
 
     expect(LogQuery::users())->toBe([7 => 'audit', 12 => '5'])
         ->and(uamswp_auditor_role_g3_db()->prepared)->toBe(['SELECT DISTINCT user_id, user_login FROM `wp_uamswp_auditor_log` ORDER BY user_login']);
+});
+
+it('lists only the rows that carry a numeric ID and a scalar login', function (): void {
+    uamswp_auditor_role_g3_db()->results = [[
+        ['user_id' => '7', 'user_login' => null],
+        ['user_id' => 'x', 'user_login' => 'nobody'],
+        ['user_id' => null, 'user_login' => 'nobody'],
+        ['user_login' => 'no id'],
+        ['user_id' => '9'],
+        'not a row',
+        ['user_id' => '12', 'user_login' => 'ok'],
+    ]];
+
+    expect(LogQuery::users())->toBe([12 => 'ok']);
 });
 
 it('lists no users when the query fails', function (): void {

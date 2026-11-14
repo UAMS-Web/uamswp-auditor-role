@@ -141,7 +141,7 @@ final class Session
      */
     public static function login_is_auditor(string $login): bool
     {
-        global $wpdb;
+        $wpdb = Database::wpdb();
 
         // One read, joined by login, so no user ID passes through PHP.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -217,7 +217,7 @@ final class Session
             return $pagenow;
         }
 
-        $script = isset($_SERVER['SCRIPT_NAME']) ? sanitize_text_field(wp_unslash($_SERVER['SCRIPT_NAME'])) : '';
+        $script = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME']) ? sanitize_text_field(wp_unslash($_SERVER['SCRIPT_NAME'])) : '';
 
         return basename($script);
     }
@@ -232,7 +232,7 @@ final class Session
         }
 
         // A read of the routing parameter only; wp-login.php verifies each action itself.
-        $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : 'login'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $action = isset($_REQUEST['action']) && is_string($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : 'login'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
         $defaults = self::exempt_login_actions();
         $exempt = apply_filters('uamswp_auditor_role_exempt_login_actions', $defaults);

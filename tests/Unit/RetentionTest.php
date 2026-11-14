@@ -139,7 +139,7 @@ it('deletes rows older than the period in batches and records how many', functio
     uamswp_auditor_role_g3_options(Log::SCHEMA, '30');
     uamswp_auditor_role_g3_db()->query_returns = [1000, 1000, 5, 1000];
     Functions\expect('update_option')->once()->with(Retention::LAST_PRUNE, Mockery::on(
-        static fn (array $record): bool => array_keys($record) === ['time', 'deleted'] && abs($record['time'] - time()) <= 2 && $record['deleted'] === 2005
+        static fn (array $record): bool => array_keys($record) === ['time', 'deleted'] && is_int($record['time']) && abs($record['time'] - time()) <= 2 && $record['deleted'] === 2005
     ), false);
 
     expect(Retention::prune())->toBe(2005)
@@ -149,6 +149,16 @@ it('deletes rows older than the period in batches and records how many', functio
 
     expect($m)->toHaveCount(2)
         ->and(abs((int) strtotime(($m[1] ?? '').' UTC') - (time() - 30 * 86400)))->toBeLessThanOrEqual(2);
+});
+
+it('deletes nothing when the statement cannot be prepared', function (): void {
+    uamswp_auditor_role_as(false);
+    uamswp_auditor_role_g3_options(Log::SCHEMA);
+    uamswp_auditor_role_g3_db()->prepare_fails = true;
+    Functions\when('update_option')->justReturn(true);
+
+    expect(Retention::prune())->toBe(0)
+        ->and(uamswp_auditor_role_g3_db()->queries)->toBe([]);
 });
 
 it('stops after a batch that deleted fewer than a full batch', function (): void {

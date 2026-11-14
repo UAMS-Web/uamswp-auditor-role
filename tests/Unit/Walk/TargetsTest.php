@@ -49,3 +49,38 @@ it('visits each screen of each site, and each AJAX action once', function (): vo
 it('makes nothing of no inventories', function (): void {
     expect(Targets::from_inventories([]))->toBe([]);
 });
+
+it('opens a hidden-list script entry as that script, and nothing else', function (string $entry, ?string $url): void {
+    expect(Targets::hidden_url('https://example.org/wp-admin/', $entry))->toBe($url);
+})->with([
+    'script' => ['customize.php', 'https://example.org/wp-admin/customize.php'],
+    'script with a query' => ['edit.php?post_type=seopress_404', 'https://example.org/wp-admin/edit.php?post_type=seopress_404'],
+    'page entry' => ['page:seopress-setup', null],
+    'page prefix' => ['page:genesis-cpt-archive-*', null],
+    'a path' => ['network/sites.php', null],
+    'a prefix before the script' => ['x customize.php', null],
+    'a suffix after the script' => ['customize.php x', null],
+    'not php' => ['customize.html', null],
+    'no dot before php' => ['customizexphp', null],
+    'empty' => ['', null],
+]);
+
+it('visits each site\'s hidden script entries after its menu, once, before its AJAX actions', function (): void {
+    $targets = Targets::from_inventories([
+        ['admin_url' => 'https://example.org/wp-admin/', 'menu' => ['index.php', 'edit-comments.php'], 'hidden' => ['customize.php', 'edit-comments.php', 'page:seopress-setup', 'customize.php', 7, ['options.php'], null, 'options.php'], 'ajax' => ['heartbeat']],
+        ['admin_url' => 'https://example.org/two/wp-admin/', 'menu' => ['index.php'], 'hidden' => ['customize.php']],
+        ['admin_url' => 'https://example.org/three/wp-admin/', 'menu' => ['index.php'], 'hidden' => 'customize.php'],
+    ]);
+
+    expect(array_column($targets, 'url'))->toBe([
+        'https://example.org/wp-admin/index.php',
+        'https://example.org/wp-admin/edit-comments.php',
+        'https://example.org/wp-admin/customize.php',
+        'https://example.org/wp-admin/options.php',
+        'https://example.org/wp-admin/admin-ajax.php',
+        'https://example.org/two/wp-admin/index.php',
+        'https://example.org/two/wp-admin/customize.php',
+        'https://example.org/three/wp-admin/index.php',
+    ])
+        ->and($targets[2])->toBe(['kind' => 'screen', 'label' => 'https://example.org/wp-admin/customize.php', 'url' => 'https://example.org/wp-admin/customize.php', 'method' => 'GET', 'body' => []]);
+});

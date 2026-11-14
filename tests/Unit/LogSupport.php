@@ -40,6 +40,9 @@ final class Uamswp_Auditor_Role_G3_Wpdb
     /** @var list<mixed> What each get_var() call returns, in order. */
     public array $vars = [];
 
+    /** @var bool Whether prepare() fails, as it does for a statement it cannot read. */
+    public bool $prepare_fails = false;
+
     /** @var list<int|false> What each query() call returns, in order. */
     public array $query_returns = [];
 
@@ -58,11 +61,15 @@ final class Uamswp_Auditor_Role_G3_Wpdb
     /**
      * Substitute the placeholders the plugin uses, so a test can read the statement.
      */
-    public function prepare(string $sql, mixed ...$values): string
+    public function prepare(string $sql, mixed ...$values): ?string
     {
+        if ($this->prepare_fails) {
+            return null;
+        }
+
         $index = 0;
         $prepared = (string) preg_replace_callback('/%[ids]/', static function (array $m) use (&$index, $values): string {
-            $value = $values[$index++] ?? '';
+            $value = uamswp_auditor_role_text($values[$index++] ?? '');
 
             return match ($m[0]) {
                 '%i' => '`'.$value.'`',

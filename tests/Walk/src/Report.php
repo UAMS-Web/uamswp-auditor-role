@@ -14,7 +14,7 @@ final class Report
      * Whether the run passed: at least one target was visited, and none wrote
      * outside the allowlist. A run that visited nothing proved nothing.
      *
-     * @param  list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, unexpected: list<array{table: string, kind: string, info: string}>}>  $results
+     * @param  list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, location: string, unexpected: list<array{table: string, kind: string, info: string}>}>  $results
      */
     public static function passed(array $results): bool
     {
@@ -35,7 +35,7 @@ final class Report
      * The report: a summary, every unexpected write with the target that made
      * it, and the count of each HTTP status.
      *
-     * @param  list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, unexpected: list<array{table: string, kind: string, info: string}>}>  $results
+     * @param  list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, location: string, unexpected: list<array{table: string, kind: string, info: string}>}>  $results
      */
     public static function markdown(array $results): string
     {
@@ -88,6 +88,54 @@ final class Report
 
         foreach ($statuses as $status => $count) {
             $lines[] = '| '.$status.' | '.$count.' |';
+        }
+
+        return implode("\n", $lines)."\n";
+    }
+
+    /**
+     * Every target the run visited, in the order visited, with its status,
+     * what the plugin did with it (see Outcome), where a redirect sent it, and
+     * its unexpected writes. The count matches the run's `Inventoried` line unless `--limit` cut it.
+     *
+     * @param  list<array{target: array{kind: string, label: string, url: string, method: string, body: array<string, string>}, status: int, outcome: string, location: string, unexpected: list<array{table: string, kind: string, info: string}>}>  $results
+     */
+    public static function targets(array $results): string
+    {
+        $outcomes = [];
+        $rows = [];
+
+        foreach ($results as $index => $result) {
+            $outcomes[$result['outcome']] = ($outcomes[$result['outcome']] ?? 0) + 1;
+            $rows[] = sprintf(
+                '| %d | `%s` | %d | %s | %s | %d |',
+                $index + 1,
+                str_replace('|', '\|', $result['target']['label']),
+                $result['status'],
+                $result['outcome'],
+                $result['location'] === '' ? '' : '`'.str_replace('|', '\|', $result['location']).'`',
+                count($result['unexpected']),
+            );
+        }
+
+        ksort($outcomes);
+        $counts = [];
+
+        foreach ($outcomes as $outcome => $count) {
+            $counts[] = $outcome.' '.$count;
+        }
+
+        $lines = [
+            '## Every target',
+            '',
+            sprintf('%d targets, in the order visited%s.', count($results), $counts === [] ? '' : ' ('.implode(', ', $counts).')'),
+        ];
+
+        if ($rows !== []) {
+            $lines[] = '';
+            $lines[] = '| # | Target | Status | Plugin | Redirects to | Unexpected writes |';
+            $lines[] = '| ---: | --- | ---: | --- | --- | ---: |';
+            array_push($lines, ...$rows);
         }
 
         return implode("\n", $lines)."\n";

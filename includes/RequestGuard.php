@@ -148,7 +148,7 @@ final class RequestGuard
      *
      * Kept free of side effects so each branch can be tested on its own.
      *
-     * @param  array<string, mixed>  $params  The query and body parameters.
+     * @param  array<array-key, mixed>  $params  The query and body parameters.
      */
     public static function reason(string $script, string $method, array $params, bool $is_admin): ?string
     {
@@ -202,7 +202,7 @@ final class RequestGuard
      * Why an admin GET would be refused: an acting `action`, or a nonce outside
      * a list table's filter form.
      *
-     * @param  array<string, mixed>  $params
+     * @param  array<array-key, mixed>  $params
      */
     public static function get_reason(string $script, array $params): ?string
     {
@@ -262,11 +262,15 @@ final class RequestGuard
             return $result;
         }
 
-        if (! Session::is_auditor() || in_array($request->get_method(), self::read_methods(), true)) {
+        $method = $request->get_method();
+
+        if (! Session::is_auditor() || in_array($method, self::read_methods(), true)) {
             return $result;
         }
 
-        self::$refusal = 'rest:'.$request->get_method().' '.$request->get_route();
+        $route = $request->get_route();
+
+        self::$refusal = 'rest:'.(is_string($method) ? $method : '').' '.(is_string($route) ? $route : '');
 
         return new WP_Error(
             'uamswp_auditor_role_read_only',
@@ -367,7 +371,7 @@ final class RequestGuard
             return true;
         }
 
-        if (! isset($_SERVER['REQUEST_URI'])) {
+        if (! isset($_SERVER['REQUEST_URI']) || ! is_string($_SERVER['REQUEST_URI'])) {
             return false;
         }
 
@@ -378,7 +382,7 @@ final class RequestGuard
 
     private static function method(): string
     {
-        $method = isset($_SERVER['REQUEST_METHOD']) ? sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'])) : 'get';
+        $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'])) : 'get';
 
         return strtoupper($method);
     }
@@ -386,14 +390,14 @@ final class RequestGuard
     /**
      * The query and body parameters, keys only trusted as routing values.
      *
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private static function request_params(): array
     {
         // Routing values only, compared against fixed lists; nothing is stored or printed.
         $params = array_merge(wp_unslash($_GET), wp_unslash($_POST)); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
-        if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']) && ! isset($params['_method'])) {
+        if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']) && is_string($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']) && ! isset($params['_method'])) {
             $params['_method'] = sanitize_key(wp_unslash($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']));
         }
 

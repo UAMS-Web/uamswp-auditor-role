@@ -38,16 +38,16 @@ final class ReportTest extends IntegrationTestCase
         }
 
         $this->assertSame(is_multisite() ? (is_subdomain_install() ? 'multisite-subdomain' : 'multisite-subdirectory') : 'single', $report['type']);
-        $this->assertSame($GLOBALS['wp_version'], $report['versions']['wordpress']);
-        $this->assertCount(is_multisite() ? count(get_sites(['number' => 0])) : 1, $report['sites']);
-        $this->assertContains('uamswp_g4_view_reports', $report['administrator_caps_not_in_core']);
-        $this->assertNotContains('manage_options', $report['administrator_caps_not_in_core']);
-        $this->assertContains('uamswp_g4_api_key', $report['secret_looking_option_names']);
-        $this->assertNotContains('uamswp_g4_label', $report['secret_looking_option_names']);
+        $this->assertSame($GLOBALS['wp_version'], self::value_at($report, 'versions', 'wordpress'));
+        $this->assertCount(is_multisite() ? count(get_sites(['number' => 0])) : 1, self::as_array($report['sites']));
+        $this->assertContains('uamswp_g4_view_reports', self::as_array($report['administrator_caps_not_in_core']));
+        $this->assertNotContains('manage_options', self::as_array($report['administrator_caps_not_in_core']));
+        $this->assertContains('uamswp_g4_api_key', self::as_array($report['secret_looking_option_names']));
+        $this->assertNotContains('uamswp_g4_label', self::as_array($report['secret_looking_option_names']));
         $this->assertNotEmpty($report['themes']);
 
         if (is_multisite()) {
-            $this->assertContains('uamswp_g4_network_token', $report['secret_looking_network_option_names']);
+            $this->assertContains('uamswp_g4_network_token', self::as_array($report['secret_looking_network_option_names']));
         }
 
         $this->assertStringNotContainsString(self::PLANTED, $json);
@@ -71,18 +71,18 @@ final class ReportTest extends IntegrationTestCase
         $json = (string) wp_json_encode($export);
 
         $this->assertTrue($export['multisite']);
-        $this->assertSame(Secrets::MASK, $export['network_settings']['uamswp_g4_api_key']);
-        $this->assertSame(['host' => 'smtp.example.org', 'password' => Secrets::MASK, 'nested' => ['token' => Secrets::MASK]], $export['network_settings']['uamswp_g4_settings']);
-        $this->assertSame(Secrets::MASK, $export['network_settings']['uamswp_g4_form']);
-        $this->assertContains('uamswp-g4/uamswp-g4.php', $export['network_active_plugins']);
+        $this->assertSame(Secrets::MASK, self::value_at($export, 'network_settings', 'uamswp_g4_api_key'));
+        $this->assertSame(['host' => 'smtp.example.org', 'password' => Secrets::MASK, 'nested' => ['token' => Secrets::MASK]], self::value_at($export, 'network_settings', 'uamswp_g4_settings'));
+        $this->assertSame(Secrets::MASK, self::value_at($export, 'network_settings', 'uamswp_g4_form'));
+        $this->assertContains('uamswp-g4/uamswp-g4.php', self::as_array($export['network_active_plugins']));
         $this->assertNotEmpty($export['themes']);
-        $this->assertCount(count(get_sites(['number' => 0])), $export['sites']);
+        $this->assertCount(count(get_sites(['number' => 0])), self::as_array($export['sites']));
         $this->assertStringNotContainsString(self::PLANTED, $json);
     }
 
     public function test_the_export_reads_only(): void
     {
-        global $wpdb;
+        $wpdb = self::database();
 
         $writes = 0;
         $count = static function (string $query) use (&$writes): string {
