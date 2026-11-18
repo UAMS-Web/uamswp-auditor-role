@@ -1,10 +1,10 @@
 Written against v0.3.0.
 
-A deployment changes the role through these filters, from a small must-use file of the install's own rather than by editing the plugin. Each guard layer stays default-deny, so a filter widens only what it names.
+A deployment changes the role through these filters, from a small must-use file of the install's own rather than by editing the plugin. A list filter receives the plugin's default list and returns the list to use, so a callback adds to the list it receives rather than returning a new one: returning a shorter list removes defaults, which for the hidden screens and the allowlists changes what the guard lets through.
 
 | Filter | Changes |
 | --- | --- |
-| `uamswp_auditor_role_capabilities` | The capabilities the role holds. A never-granted one is dropped. |
+| `uamswp_auditor_role_capabilities` | Adds capabilities to the role. The plugin's own grants are always kept, and a never-granted one is dropped. |
 | `uamswp_auditor_role_denied_caps` | Adds capabilities denied to the role. |
 | `uamswp_auditor_role_hidden_screens` | The hidden screens: `page:<slug>`, `page:<prefix>*` (every page slug that starts with the prefix) or `<script>.php[?param=value]`. |
 | `uamswp_auditor_role_hidden_dashboard_widgets` | Dashboard widgets removed for the role. |

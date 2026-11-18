@@ -14,8 +14,8 @@ You need WordPress 6.8 or newer, PHP 8.2 or newer, WP-CLI, and write access to `
 4. **Check every file.** From `wp-content/mu-plugins/`, run `shasum -a 256 -c uamswp-auditor-role-<version>.sha256` on macOS or `sha256sum -c uamswp-auditor-role-<version>.sha256` on Linux. Every line reads `OK`; a changed or missing file prints `FAILED`.
 5. **Confirm it loaded.** `wp plugin list --status=must-use` lists `uamswp-auditor-role-loader`, and `wp role list` lists `auditor` after the first request on each site.
 6. **Record what the install has.** Run `wp auditor discover > discovery.json` and keep the file out of the repository. It lists the plugins, the administrator capabilities plugins added, and option names that look secret-bearing (names only).
-7. **Widen or narrow the role for this install.** In a small must-use file of the install's own, add the plugin capabilities the audit needs through [`uamswp_auditor_role_capabilities`](Filters.md), and hide any further screen that shows a secret through [`uamswp_auditor_role_hidden_screens`](Filters.md). A plugin's custom post types stay hidden from the role until their `edit_*` capability is added.
-8. **Create the first account.** On a single site, `wp user create <login> <email> --role=auditor`. On a multisite network, list the logins in `wp-config.php` and add them to every existing site:
+7. **Fit the role to this install.** In a small must-use file of the install's own, add the plugin capabilities the audit needs through [`uamswp_auditor_role_capabilities`](Filters.md), and hide any further screen that shows a secret through [`uamswp_auditor_role_hidden_screens`](Filters.md). A plugin's custom post types stay hidden from the role until their `edit_*` capability is added.
+8. **Create the first account.** On a single site, `wp user create <login> <email> --role=auditor`. On a multisite network, create the user with the role on the main site first (`wp user create <login> <email> --role=auditor`), then list the login in `wp-config.php` and add it to every other existing site:
 
    ```php
    define('UAMSWP_AUDITOR_ROLE_LOGINS', ['<login>']);
@@ -25,7 +25,7 @@ You need WordPress 6.8 or newer, PHP 8.2 or newer, WP-CLI, and write access to `
    wp auditor sync-sites
    ```
 
-   New sites get each login when they are created.
+   New sites get each login when they are created. `sync-sites` skips a login that has no user, and a site where the account is already a member keeps the role it has there, so check the count it reports for each login.
 9. **Optionally set an end date.** An administrator sets it on the account's **Edit User** screen. The account works through the whole of that day in the site's time zone; after it, the account cannot sign in and a live session ends on its next request.
 10. **Sign in as the auditor.** The admin bar shows **Read-only audit mode**, and a save on any screen answers *This account is in read-only audit mode. Changes are refused and recorded.*
 

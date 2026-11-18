@@ -6,7 +6,7 @@ Every command is under `wp auditor`, run from the WordPress root. On a multisite
 | --- | --- |
 | `wp auditor discover [--format=<json or yaml>]` | The facts an install needs before deploying: type, versions, sites, plugins, themes, administrator capabilities not in core, secret-looking option names (names only, never values). JSON by default. |
 | `wp auditor network-export [--file=<path>]` | Network settings, plugins, themes and sites as JSON, every secret-bearing value masked. |
-| `wp auditor sync-sites` | Adds each login in `UAMSWP_AUDITOR_ROLE_LOGINS` to every site. |
+| `wp auditor sync-sites` | Multisite only: adds each login in `UAMSWP_AUDITOR_ROLE_LOGINS` that has a user to every site. |
 | `wp auditor refresh-role [--network]` | Rewrites the role on the current site, or on every site with `--network`. |
 | `wp auditor log list` | Prints log rows, newest first. |
 | `wp auditor log export [--file=<path>]` | Exports every row the options select as CSV, to standard output or the file. |

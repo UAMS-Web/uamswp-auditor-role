@@ -8,7 +8,7 @@ Open an issue in [the repository's tracker](https://github.com/UAMS-Web/uamswp-a
 
 ## Releases
 
-Each release on the [Releases](https://github.com/UAMS-Web/uamswp-auditor-role/releases) page attaches the upload ZIP and its checksum list, and `readme.txt` in the repository carries the changelog. These pages are republished from `main` when a release is published, so each page names the release it was written against.
+Each release on the [Releases](https://github.com/UAMS-Web/uamswp-auditor-role/releases) page attaches the upload ZIP and its checksum list, and `readme.txt` in the repository carries the changelog. These pages are republished from the release's tag when a release is published, so each page names the release it was written against.
 
 ## Design decisions
 
