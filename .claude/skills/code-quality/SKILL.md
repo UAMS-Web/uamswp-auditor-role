@@ -124,7 +124,7 @@ WordPress PHPStan notes (see comments in `templates/phpstan-wordpress.neon.dist`
     "stan": "phpstan analyse --no-progress --memory-limit=2G",
     "refactor": "rector",
     "refactor:sweep": "rector --clear-cache --config=rector-sweep.php",
-    "test:refactor": "rector --dry-run",
+    "test:refactor": "rector --dry-run --clear-cache",
     "test:refactor:sweep": "rector --dry-run --clear-cache --config=rector-sweep.php",
     "pint": "pint",
     "test:pint": "pint --test"
@@ -134,6 +134,8 @@ WordPress PHPStan notes (see comments in `templates/phpstan-wordpress.neon.dist`
 `stan`, `refactor`, `refactor:sweep`, `test:refactor` and `test:refactor:sweep` are the names uams-statamic and aether-wordpress-migration-api already use. `refactor` applies the gating profile, `test:refactor` previews it; the `:sweep` pair does the same for the sweep profile, which is run deliberately and reviewed, never as the gate. `pint` formats; `test:pint` is the check the runner uses. While working, run `vendor/bin/pint --dirty` on what you touched, not `--test`.
 
 Rector often needs more than one apply pass before a dry-run is clean: after `composer refactor` (or `refactor:sweep`), run the matching `test:refactor` / `test:refactor:sweep` again and repeat apply until the dry-run reports no further changes.
+
+**The gate clears the cache** (UAMS-Web/uams-claude-skills#824). Rector keys its result cache on each file's own content, so a change in one file that makes a rule fire in another, unchanged file leaves the second file reading clean from the cache. Measured on Rector 2.8 with `RecastingRemovalRector`: a `(string)` cast in `B.php` over a call to a method of `A.php` that declared no return type passed `rector --dry-run` and was cached; adding `: string` to `A.php` left `rector --dry-run` at exit 0, and `rector --dry-run --clear-cache` exited 2 at the cast. That is how `UAMS-Web/UAMSWP-Pusher` kept passing for several merges after a return type made a cast redundant. So the gating command, in `test:refactor`, `local-ci.json` and any other job, always carries `--clear-cache`. The shared CI workflow runs `composer test:refactor` on a fresh runner and caches only the Composer package directory (`setup-action.yml`), not Rector's cache directory in the system temp path, so CI starts with no Rector cache; the flag in the script keeps that true if a cache step is ever added.
 
 The gating and sweep profiles share one Rector cache. A dry-run of one profile right after the other can look like a no-op unless the cache is cleared. The `:sweep` scripts above pass `--clear-cache`; when switching the other way (sweep, then gate), run the gating command with `--clear-cache` as well (for example `vendor/bin/rector --clear-cache --dry-run`), or clear once before the first run of the new profile.
 
@@ -180,7 +182,7 @@ Three jobs, one per tool, run before a pull request where remote CI does not run
 | Job | Command | Gated by |
 |---|---|---|
 | `pint` | `vendor/bin/pint --test` | any `.php` in the diff |
-| `rector` | `vendor/bin/rector --dry-run` (the gating profile) | any `.php` under the paths `rector.php` names |
+| `rector` | `vendor/bin/rector --dry-run --clear-cache` (the gating profile) | any `.php` under the paths `rector.php` names |
 | `phpstan` | `composer stan` | any `.php` in the diff, tests included, because `phpstan.neon.dist` lists `tests` |
 
 This repository is public, so Actions minutes are free: run the three commands as steps of its CI workflow, and locally before pushing. A private repository without the local-ci runner yet does the same three commands locally before every push (or as workflow steps if minutes are acceptable); adopt local-ci when that skill is available in the checkout so gating stops depending on Actions.
@@ -285,6 +287,8 @@ It compares bytes, so a byte order mark or a changed line ending is a difference
 | `UAMS-Web/UAMSWP-Find-a-Doc` | UAMS-Web/UAMSWP-Find-a-Doc#1308, [run 43344625014](https://github.com/UAMS-Web/UAMSWP-Find-a-Doc/actions/runs/43344625014) | `28660bf21bcf` | 28 of 28 | 10 | 0 |
 
 Both ran `checks / Pest (ubuntu-latest)`; `aether-people` also ran `checks / Mutation annotations (none inert) (ubuntu-latest)`, which `UAMSWP-Find-a-Doc` skips with `mutate: false`. The count matches the runner name a called job carries in its name, `(<os>)`. The same match finds 6 called-job legs on `windows-latest` or `macos-latest` in the probe run above (run 41675483937, 36 of 36 jobs read, among them `default / Pest (windows-latest)` and `default / Mutation annotations (none inert) (macos-latest)`), so a zero here is the callers' legs, not a match that cannot see a called job's non-Linux leg.
+
+**The three-runner half at `v0.11.1` (UAMS-Web/uams-claude-skills#758).** `runner-legs.yml` in `UAMS-Web/uams-ci-workflows` at `v0.11.1` is the check that a call's run put every job on the runners its classification names, and UAMS-Web/wordpress-plugin-template calls it from a `legs` job beside its `checks` call, pinned to the same tag with default `linux-only`. That caller's run is the proof that a release's three-runner legs hold: [run 43557508877](https://github.com/UAMS-Web/wordpress-plugin-template/actions/runs/43557508877), head `16cb45c`, 26 jobs read from `GET actions/runs/<id>/jobs?per_page=100`, with `legs / Runner legs` and `CI` both `success`. `checks / Pest` and `checks / Mutation annotations (none inert)` each ran on `ubuntu-latest`, `windows-latest` and `macos-latest` and succeeded, and four optional jobs reported `skipped`. The `legs` job re-checks the classification on each pin bump of that caller, so the link is a measurement at `v0.11.1`, not a standing claim about later tags. Measured on GitHub-hosted runners only.
 
 #### Requiring the checks
 
@@ -424,7 +428,7 @@ Never reformat vendor code, and never let the reformat commit include it: if Pin
 
 ## Before a pull request
 
-In a public repository whose CI workflow runs the three tools, that run on a draft pull request is the pre-PR check. Before each push, run the three tools on the changed files with the commands in *Local CI jobs* below (`vendor/bin/pint --test` and `vendor/bin/rector --dry-run` with the changed PHP files as arguments, and `composer stan`; a repository without one of the tools skips it), then open the pull request as a draft, fix what the workflow reports by pushing to the same branch, and flip it to ready once every remote check is green. The [`writing-pull-requests`](../writing-pull-requests/SKILL.md) skill's *Draft state and merge order* owns this and names the cases that still run locally. Where the tools have no remote run:
+In a public repository whose CI workflow runs the three tools, that run on a draft pull request is the pre-PR check. Before each push, run the three tools on the changed files with the commands in *Local CI jobs* below (`vendor/bin/pint --test` and `vendor/bin/rector --dry-run --clear-cache` with the changed PHP files as arguments, and `composer stan`; a repository without one of the tools skips it), then open the pull request as a draft, fix what the workflow reports by pushing to the same branch, and flip it to ready once every remote check is green. The [`writing-pull-requests`](../writing-pull-requests/SKILL.md) skill's *Draft state and merge order* owns this and names the cases that still run locally. Where the tools have no remote run:
 
 Run the three commands on the branch, and fix what they report before asking for review.
 
