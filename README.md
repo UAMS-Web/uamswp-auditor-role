@@ -8,45 +8,14 @@ Status: built and verified on a local multisite. Not yet rolled out (#23). Deplo
 
 ## How it works
 
-The role holds `manage_options` so settings screens open, which means capabilities alone cannot keep it read-only. Four guard layers do, each default-deny:
+The role holds `manage_options` so settings screens open, which means capabilities alone cannot keep it read-only. Four default-deny guard layers do: requests, AJAX actions, capabilities and database statements. Screens whose viewing is the exposure are hidden, and an activity log, an optional end date per account and a **Read-only audit mode** badge are the compensating controls.
 
-| Layer | Where | What it refuses |
-| --- | --- | --- |
-| Requests | `RequestGuard` | Every non-read request (POST, PUT, PATCH, DELETE), anywhere on the site, including the REST API after a `_method` override; `admin-post.php`; `options.php`; XML-RPC sign-in; admin GETs carrying an acting `action` or a nonce outside a list table's filter form; screens that write on load (`post-new.php`, `update.php`); the network admin. |
-| AJAX | `RequestGuard` | Every `admin-ajax.php` action not on a short list verified read-only in core. |
-| Capabilities | `MetaCaps` | Every never-granted capability and every acting meta capability (`activate_plugin`, `delete_post`, `create_app_password`, ...), mapped to `do_not_allow`. |
-| Database | `DatabaseGuard` | Every statement that is not a read, through the `query` filter, during an Auditor session. The plugin's own writes (its log, the session token, adding a configured login) pass through `DatabaseGuard::bypass()`. |
+The [wiki](https://github.com/UAMS-Web/uamswp-auditor-role/wiki) holds the rest of the documentation:
 
-Screens whose viewing is the exposure (raw options, exports, form entries, mail and deploy settings, license keys, the Site Health info tab) are hidden from the menu and refused by URL (`Screens`).
-
-The compensating controls: an activity log per site (`Log`), an administrator-only viewer under **Tools > Auditor log** with filters, CSV export and a retention setting (`LogViewer`, `Retention`), an optional end date per account (`Account`), and a **Read-only audit mode** badge in the admin bar (`AdminBar`).
-
-### Filters
-
-| Filter | Changes |
-| --- | --- |
-| `uamswp_auditor_role_capabilities` | The capabilities the role holds. A never-granted one is dropped. |
-| `uamswp_auditor_role_denied_caps` | Adds capabilities denied to the role. |
-| `uamswp_auditor_role_hidden_screens` | The hidden screens: `page:<slug>`, `page:<prefix>*` (every page slug that starts with the prefix) or `<script>.php[?param=value]`. |
-| `uamswp_auditor_role_hidden_dashboard_widgets` | Dashboard widgets removed for the role. |
-| `uamswp_auditor_role_activation_flags` | Adds plugin activation-redirect flags that read as unset for the role: `option:<name>` or `transient:<name>`. |
-| `uamswp_auditor_role_ajax_actions` | The allowlisted AJAX actions. Add one only after reading what it does. |
-| `uamswp_auditor_role_get_actions` | The `action` values an admin GET may carry. |
-| `uamswp_auditor_role_allow_query` | Lets one refused statement through; see [`docs/WRITES-ON-LOAD.md`](docs/WRITES-ON-LOAD.md). |
-| `uamswp_auditor_role_exempt_login_actions` | The `wp-login.php` actions that are not an Auditor session. |
-| `uamswp_auditor_role_logins` | The multisite logins, after `UAMSWP_AUDITOR_ROLE_LOGINS`. |
-
-### WP-CLI
-
-| Command | Does |
-| --- | --- |
-| `wp auditor discover` | The facts an install needs before deploying: type, versions, sites, plugins, themes, administrator capabilities not in core, secret-looking option names (names only). |
-| `wp auditor network-export [--file=]` | Network settings, plugins, themes and sites as JSON, every secret-bearing value masked. |
-| `wp auditor sync-sites` | Adds each login in `UAMSWP_AUDITOR_ROLE_LOGINS` to every site. |
-| `wp auditor refresh-role [--network]` | Rewrites the role. |
-| `wp auditor log list` / `export` | Reads the log or exports it as CSV, with `--auditor`, `--from`, `--to`, `--event`, and `--all-sites` on a network. Read-only: pruning is the daily scheduled job's (`wp cron event run uamswp_auditor_role_prune` runs it now). |
-
-Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php <wordpress-path>` reports from files alone.
+- [How the guard works](https://github.com/UAMS-Web/uamswp-auditor-role/wiki/How-the-guard-works): the four layers and the hidden screens.
+- [Filters](https://github.com/UAMS-Web/uamswp-auditor-role/wiki/Filters): every filter a deployment can use to change the role.
+- [WP-CLI commands](https://github.com/UAMS-Web/uamswp-auditor-role/wiki/WP-CLI-commands): the `wp auditor` commands.
+- [Deploying the plugin](https://github.com/UAMS-Web/uamswp-auditor-role/wiki/Deploying-the-plugin), the guides for administrators, and [Troubleshooting](https://github.com/UAMS-Web/uamswp-auditor-role/wiki/Troubleshooting).
 
 ## What is in it
 
@@ -67,6 +36,7 @@ Where an install's bootstrap fails under WP-CLI, `php scripts/discover-files.php
 | `docs/WRITES-ON-LOAD.md` | Screens that write on load, and the decision for each. |
 | `docs/OPERATIONS.md` | Offboarding an auditor, and the periodic review of the activity log. |
 | `docs/WALK.md` | Running the screen walk on an install, and reading its result. |
+| `docs/wiki/` | The wiki's pages, published by the **Publish wiki** workflow. |
 
 ## Develop
 
@@ -138,6 +108,6 @@ Developers:
 - Todd McKee
 - Brent Passmore
 
-## Licence
+## License
 
 GPL-3.0-or-later. Copyright (C) 2026 University of Arkansas for Medical Sciences.
